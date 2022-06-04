@@ -1,0 +1,39 @@
+{
+    "name": "thesgroup/docker-container-manager",
+    "description": "Docker Container Manager CLI",
+    "type": "project",
+    "license": "GPL-3.0-only",
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require": {
+        "php": "~7.4",
+        "ext-ctype": "*",
+        "ext-iconv": "*",
+        "symfony/console": "^5.4",
+        "symfony/process": "^5.4",
+        "symfony/serializer": "^5.4"
+    },
+    "authors": [
+        {
+            "name": "Alexander Lukyanov",
+            "email": "support@sashas.org"
+        }
+    ],
+    "autoload": {
+        "files": ["constants.php"],
+        "psr-4": {
+            "Dcm\\Cli\\": "src/"
+        }
+    },
+    "bin": [
+        "bin/dcm"
+    ],
+    "config": {
+        "allow-plugins": {
+            "bamarni/composer-bin-plugin": true
+        }
+    },
+    "require-dev": {
+        "bamarni/composer-bin-plugin": "^1.5"
+    }
+}

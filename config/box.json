@@ -1,0 +1,27 @@
+{
+  "directories": [
+    "bin",
+    "src"
+  ],
+  "files": [
+    "constants.php",
+    "vendor/autoload.php",
+    "config/config.json"
+  ],
+  "finder": [
+    {
+      "in": "vendor",
+      "name": "*.php*",
+      "exclude": [
+        "phpunit",
+        "Tests",
+        "tests"
+      ]
+    }
+  ],
+  "stub": "stub.php",
+  "compactors": [
+    "KevinGH\\Box\\Compactor\\Json",
+    "KevinGH\\Box\\Compactor\\Php"
+  ]
+}

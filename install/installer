@@ -1,0 +1,392 @@
+<?php
+/**
+ * @file
+ * Docker Container Manager installer.
+ *
+ * This script will check requirements, download the CLI, move it into place.
+ *
+ * Supported options:
+ *      --insecure             Disable TLS verification (not recommended).
+ *      --v                    Verbose output.
+ *
+ * This file's syntax must support PHP 7.4.0 or higher.
+ * It must not include any other files.
+ */
+
+namespace TheSGroup\DockerContainerManager\Installer;
+
+// Check the minimum PHP version for this installer to run.
+if (version_compare(PHP_VERSION, '7.4.0', '<')) {
+    /** @noinspection PhpUnhandledExceptionInspection */
+    throw new \Exception(sprintf('The PHP version is %s, but 7.4.0 or greater is required.', PHP_VERSION));
+}
+if (PHP_SAPI !== 'cli') {
+    throw new \RuntimeException('This can only be run via command-line PHP.');
+}
+
+(new Installer())->run();
+
+class Installer {
+    const PACKAGE_NAME = 'thesgroup/docker-container-manager';
+    private $cliName = 'Docker Container Manager';
+    private $packagistUrl = 'https://repo.packagist.org/p2/'.self::PACKAGE_NAME.'.json';
+    private $argv;
+
+    public function __construct(array $args = []) {
+        $this->argv = !empty($args) ? $args : $GLOBALS['argv'];
+    }
+
+    /**
+     *  Installation
+     */
+    public function run(): void {
+        error_reporting(E_ALL);
+        ini_set('log_errors', 0);
+        ini_set('display_errors', 1);
+
+        $this->out($this->cliName . " installer", 'info');
+        // Run environment checks.
+        $this->out(PHP_EOL . "Environment check", 'info');
+        $this->envCheck();
+        // The necessary checks have passed. Start downloading the right version.
+        $this->out(PHP_EOL .'Finding the latest version', 'info');
+
+        $latest = $this->findLatestVersion($this->packagistUrl);
+        $this->out($latest, 'success');
+        // Download
+        //Checking file integrity
+        //Checking that the file is a valid Phar
+        //move to home
+        //install
+
+        $result = 0;//success
+        exit($result);
+    }
+
+    private function findLatestVersion($url): ?string {
+        $packageInfo = file_get_contents($url, false, \stream_context_create($this->getStreamContext(15)));
+        if ($packageInfo === false) {
+            $this->out(PHP_EOL . "Failed to download package information file: ".$url, 'error');
+            exit(1);
+        }
+        $packageInfo = json_decode($packageInfo, true);
+        if ($packageInfo === null) {
+            $this->out(PHP_EOL . "Failed to decode package information file: ".$url, 'error');
+            exit(1);
+        }
+        if (!isset($packageInfo['packages']) || !isset($packageInfo['packages'][self::PACKAGE_NAME])) {
+            $this->out(PHP_EOL . "Failed to read package information file: ".$url, 'error');
+        }
+        $versions = $packageInfo['packages'][self::PACKAGE_NAME];
+        return  $this->findInstallableVersion($versions);
+    }
+
+    private function findInstallableVersion(array $versions): ?string
+    {
+        $phpVersion = PHP_VERSION;
+        foreach ($versions as $version) {
+            if (!isset($version['require']['php']) || !isset($version['version'])) {
+                continue;
+            }
+            $cliMinVersion = str_replace('~','', $version['require']['php']);
+            if (version_compare($phpVersion, $cliMinVersion, '<')) {
+                if ($this->flagEnabled('v')) {
+                    $this->out(sprintf('Version %s requires PHP %s (current PHP version is %s)', $version['version'], $cliMinVersion, $phpVersion), 'info');
+                }
+                continue;
+            }
+            if ($this->flagEnabled('v')) {
+                $this->out(sprintf('Version %s requires PHP %s (current PHP version is %s)', $version['version'], $cliMinVersion, $phpVersion), 'success');
+            }
+            return (string) $version['version'];
+        }
+        $this->out(PHP_EOL . 'No installable versions were found.', 'error');
+        exit(1);
+    }
+
+    private function envCheck(): void
+    {
+        // Check that the JSON and Phar extensions are installed (needed in this script).
+        $this->checkExtension('json');
+        $this->checkExtension('phar');
+        $this->checkExtension('openssl');
+        $this->checkExtension('curl');
+        $this->checkExtension('ctype'); // Symfony
+        $this->checkExtension('pcre'); // Symfony
+        $this->checkExtension('session'); // Symfony
+        $this->checkExtension('simplexml'); // Symfony
+        $this->checkExtension('tokenizer'); // Symfony
+        // Either mbstring or iconv is required by Symfony Console (even though this is not enforced in its composer.json).
+        $this->check(
+            'One or both of the "mbstring" or "iconv" PHP extensions is installed.',
+            'One or both of the "mbstring" or "iconv" PHP extensions is required.',
+            function () {
+                return \extension_loaded('mbstring') || \extension_loaded('iconv');
+            }
+        );
+        // Check whether PHP can open files via URLs.
+        $this->check(
+            'The "allow_url_fopen" setting is on.',
+            'The "allow_url_fopen" setting is off; it must be on.',
+            function () {
+                return (true == ini_get('allow_url_fopen'));
+            }
+        );
+
+        // Check a troublesome APC setting.
+        $this->check(
+            'The "apc.enable_cli" setting is off.',
+            'Warning: the "apc.enable_cli" is on; this may cause problems with Phar files.',
+            function () {
+                return (false == ini_get('apc.enable_cli'));
+            },
+            false
+        );
+    }
+
+    /**
+     * Print output
+     * @param $text
+     * @param $color
+     * @param $newLine
+     *
+     * @return void
+     */
+    private function out($text, $color = null, $newLine = true): void {
+        static $styles = [
+            'success' => "\033[0;32m%s\033[0m",
+            'error' => "\033[31;31m%s\033[0m",
+            'info' => "\033[33m%s\033[39m"
+        ];
+
+        $format = '%s';
+
+        if (isset($styles[$color])) {
+            $format = $styles[$color];
+        }
+
+        if ($newLine) {
+            $format .= PHP_EOL;
+        }
+
+        printf($format, $text);
+    }
+
+    /**
+     * Checks if a required PHP extension is installed.
+     *
+     * This attempts to give configuration advice if the extension exists but
+     * is not yet enabled.
+     *
+     * @param string $extension
+     */
+    private function checkExtension($extension): void {
+        if (\extension_loaded($extension)) {
+            if ($this->flagEnabled('v')) {
+                $this->out('  [*] The "' . $extension . '" PHP extension is installed.', 'success');
+            }
+            return;
+        }
+        $this->out('  [X] The ' . $extension . ' PHP extension is required.', 'error');
+        $extFilename = $extension . '.so';
+        $extDirs = [
+            PHP_EXTENSION_DIR,
+            dirname(PHP_BINARY) . DIRECTORY_SEPARATOR . 'ext',
+        ];
+        foreach ($extDirs as $dir) {
+            $extPath = $dir . DIRECTORY_SEPARATOR . $extFilename;
+            if (!\file_exists($extPath)) {
+                continue;
+            }
+            $this->out("The extension already exists at: $extPath");
+            if (!empty(PHP_CONFIG_FILE_SCAN_DIR) && \is_dir(PHP_CONFIG_FILE_SCAN_DIR)) {
+                $this->out(
+                    "\nTo enable it, create a file named: " . PHP_CONFIG_FILE_SCAN_DIR . DIRECTORY_SEPARATOR . "$extension.ini"
+                    . "\ncontaining this line:"
+                    . "\nextension=$extPath"
+                );
+            } else {
+                $this->out(
+                    "\nTo enable it, edit your php.ini configuration file and add the line:"
+                    . "\nextension=$extPath"
+                );
+            }
+            break;
+        }
+        exit(1);
+    }
+
+    /**
+     * Checks a condition, outputs a message, and exits if failed.
+     *
+     * @param string   $success   The success message.
+     * @param string   $failure   The failure message.
+     * @param callable $condition The condition to check.
+     * @param bool     $exit      Whether to exit on failure.
+     */
+    private function check($success, $failure, $condition, $exit = true) {
+        if ($condition()) {
+            if ( $this->flagEnabled('v')) {
+                $this->out('  [*] ' . $success, 'success');
+            }
+        }
+        elseif (!$exit) {
+            $this->out('  [!] ' . $failure, 'warning');
+        }
+        else {
+            $this->out('  [X] ' . $failure, 'error');
+            exit(1);
+        }
+    }
+
+    /**
+     * Finds a proxy address based on the https_proxy or http_proxy environment variable.
+     *
+     * @return string|null
+     */
+    private function getProxy(): ?string {
+        // The proxy variables should be ignored in a non-CLI context.
+        // This check has probably already been run, but it's important.
+        if (PHP_SAPI !== 'cli') {
+            return null;
+        }
+        foreach (['https', 'http'] as $scheme) {
+            if ($proxy = getenv($scheme . '_proxy')) {
+                return $proxy;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Constructs stream context options for downloading files.
+     *
+     * @param int $timeout
+     *
+     * @return array
+     */
+    private function getStreamContext($timeout): array {
+        $opts = [
+            'http' => [
+                'method' => 'GET',
+                'follow_location' => 1,
+                'timeout' => $timeout,
+                'user_agent' => 'DockerContainerManager Installer',
+            ],
+        ];
+        if ($proxy = $this->getProxy()) {
+            $opts['http']['proxy'] = str_replace(['http://', 'https://'], ['tcp://', 'ssl://'], $proxy);
+        }
+        if ($this->flagEnabled('insecure')) {
+            $opts['ssl']['verify_peer'] = false;
+            $opts['ssl']['verify_peer_name'] = false;
+        } elseif ($path = $this->getCaBundle()) {
+            if (\is_dir($path)) {
+                $opts['ssl']['capath'] = $path;
+            } else {
+                $opts['ssl']['cafile'] = $path;
+            }
+        }
+
+        return $opts;
+    }
+
+    /**
+     * Test if a flag is on the command line.
+     *
+     * @param string $flag A flag name (only letters, shortcuts not supported).
+     *
+     * @return bool
+     */
+    private function flagEnabled($flag) {
+        return in_array('--' . $flag, $this->argv, true);
+    }
+
+    /**
+     * Returns the path to the system CA bundle, if found.
+     *
+     * Adapted from composer/ca-bundle.
+     * @link https://github.com/composer/ca-bundle
+     * @see \Composer\CaBundle\CaBundle::getSystemCaRootBundlePath()
+     *
+     * @return string|false
+     */
+    private function getCaBundle() {
+        static $path;
+        if (isset($path)) {
+            return $path;
+        }
+
+        $caBundlePaths = [];
+
+        $caBundlePaths[] = \getenv('SSL_CERT_FILE');
+        $caBundlePaths[] = \getenv('SSL_CERT_DIR');
+
+        $caBundlePaths[] = \ini_get('openssl.cafile');
+        $caBundlePaths[] = \ini_get('openssl.capath');
+
+        $otherLocations = [
+            '/etc/pki/tls/certs/ca-bundle.crt', // Fedora, RHEL, CentOS (ca-certificates package)
+            '/etc/ssl/certs/ca-certificates.crt', // Debian, Ubuntu, Gentoo, Arch Linux (ca-certificates package)
+            '/etc/ssl/ca-bundle.pem', // SUSE, openSUSE (ca-certificates package)
+            '/usr/local/share/certs/ca-root-nss.crt', // FreeBSD (ca_root_nss_package)
+            '/usr/ssl/certs/ca-bundle.crt', // Cygwin
+            '/opt/local/share/curl/curl-ca-bundle.crt', // OS X macports, curl-ca-bundle package
+            '/usr/local/share/curl/curl-ca-bundle.crt', // Default cURL CA bunde path (without --with-ca-bundle option)
+            '/usr/share/ssl/certs/ca-bundle.crt', // Really old RedHat?
+            '/etc/ssl/cert.pem', // OpenBSD
+            '/usr/local/etc/ssl/cert.pem', // FreeBSD 10.x
+            '/usr/local/etc/openssl/cert.pem', // OS X homebrew, openssl package
+            '/usr/local/etc/openssl@1.1/cert.pem', // OS X homebrew, openssl@1.1 package
+        ];
+
+        foreach ($otherLocations as $location) {
+            $otherLocations[] = \dirname($location);
+        }
+
+        $caBundlePaths = \array_filter(\array_merge($caBundlePaths, $otherLocations));
+
+        foreach ($caBundlePaths as $candidate) {
+            if ($this->caPathUsable($candidate)) {
+                return $path = $candidate;
+            }
+        }
+
+        return $path = false;
+    }
+
+    /**
+     * Returns if a CA bundle path should be used.
+     *
+     * Adapted from composer/ca-bundle.
+     * @link https://github.com/composer/ca-bundle
+     * @see \Composer\CaBundle\CaBundle::caFileUsable()
+     * @see \Composer\CaBundle\CaBundle::caDirUsable()
+     *
+     * @param string $path
+     *
+     * @return bool
+     */
+    private function caPathUsable($path)
+    {
+        if (!\is_readable($path)) {
+            return false;
+        }
+        if (\is_file($path)) {
+            // Avoid openssl_x509_parse() on old PHP versions (CVE-2013-6420).
+            if (\function_exists('\\openssl_x509_parse') && PHP_VERSION_ID >= 50600) {
+                $contents = \file_get_contents($path);
+                if (!$contents || \strlen($contents) === 0) {
+                    return false;
+                }
+                $contents = \str_replace('TRUSTED CERTIFICATE', 'CERTIFICATE', $contents);
+                return $contents !== false && \openssl_x509_parse($contents);
+            }
+            return false;
+        }
+        if (\is_dir($path)) {
+            return (bool) \glob($path . '/*');
+        }
+        return false;
+    }
+}
