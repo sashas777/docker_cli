@@ -123,14 +123,15 @@ class BuildCommand extends Command
         $output->writeln('<info>The package was built successfully:</info>');
 
         $releaseInfo = [
-            'size' => sprintf('Size: %s', FormatterHelper::formatMemory($size)),
-            'sha-1' => sprintf('SHA-1: %s', $sha1),
-            'sha-256' => sprintf('SHA-256: %s', $sha256),
+            'size' => sprintf(FormatterHelper::formatMemory($size)),
+            'sha-1' => sprintf($sha1),
+            'sha-256' => sprintf($sha256),
         ];
         file_put_contents(
             CLI_ROOT . $this->config->getData('release_signature_relative_path'),
             $serializer->encode($releaseInfo, JsonEncoder::FORMAT)
         );
+        
         $output->writeln($releaseInfo);
 
         return Command::SUCCESS;
