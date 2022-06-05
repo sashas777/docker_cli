@@ -26,12 +26,23 @@ if (PHP_SAPI !== 'cli') {
 
 (new Installer())->run();
 
+/**
+ * Class Installer
+ */
 class Installer {
     const PACKAGE_NAME = 'thesgroup/docker-container-manager';
     private $cliName = 'Docker Container Manager';
     private $packagistUrl = 'https://repo.packagist.org/p2/'.self::PACKAGE_NAME.'.json';
+    private $pharName = 'dcm.phar';
+    private $signratureUrl = 'https://github.com/sashas777/docker_cli/raw/%s/release/signature.json';
+    private $releaseUrl = 'https://github.com/sashas777/docker_cli/raw/%s/release/dcm.phar';
+    private $configDir = '.dcm';
+    private $executable = 'dcm';
     private $argv;
 
+    /**
+     * @param array $args
+     */
     public function __construct(array $args = []) {
         $this->argv = !empty($args) ? $args : $GLOBALS['argv'];
     }
@@ -44,26 +55,106 @@ class Installer {
         ini_set('log_errors', 0);
         ini_set('display_errors', 1);
 
-        $this->out($this->cliName . " installer", 'info');
+        $this->out($this->cliName . " CLI installer", 'info');
         // Run environment checks.
         $this->out(PHP_EOL . "Environment check", 'info');
         $this->envCheck();
-        // The necessary checks have passed. Start downloading the right version.
+        $this->out('  [*] Completed.', 'success');
+
         $this->out(PHP_EOL .'Finding the latest version', 'info');
+        $latestVersion = $this->findLatestVersion();
+        $this->out('  [*] Completed.', 'success');
 
-        $latest = $this->findLatestVersion($this->packagistUrl);
-        $this->out($latest, 'success');
-        // Download
-        //Checking file integrity
-        //Checking that the file is a valid Phar
-        //move to home
-        //install
+        $this->out(PHP_EOL . 'Downloading version '.$latestVersion, 'info');
+        $signature = $this->download($latestVersion);
+        $this->out('  [*] Completed.', 'success');
 
-        $result = 0;//success
-        exit($result);
+        $this->out(PHP_EOL . 'Checking file integrity', 'info');
+        $pharPath = realpath($this->pharName) ?: $this->pharName;
+
+        if ($signature['sha-256'] !== hash_file('sha256', $pharPath)) {
+            unlink($pharPath);
+            $this->out('The download was incomplete, or the file is corrupted', 'error');
+            exit(1);
+        }
+        $this->out('  [*] Completed.', 'success');
+
+        $this->out(PHP_EOL . 'Checking that the file is a valid Phar', 'info');
+        try {
+            new \Phar($pharPath);
+        } catch (\Exception $e) {
+            $this->out('  The file is not a valid Phar archive'. "\n" . $e->getMessage(), 'error');
+            exit(1);
+        }
+        $this->out('  [*] Completed.', 'success');
+
+
+
+        $this->out(PHP_EOL . 'Making the Phar executable', 'info');
+        if (!chmod($pharPath, 0755)) {
+            $this->out('  Failed to make the Phar executable', 'error');
+            exit(1);
+        }
+        $this->out('  [*] Completed.', 'success');
+
+        if ($homeDir = $this->getHomeDirectory()) {
+            $this->out(PHP_EOL . 'Moving the Phar to your home directory', 'info');
+
+            $binDir = $homeDir . DIRECTORY_SEPARATOR . $this->configDir . DIRECTORY_SEPARATOR . 'bin';
+            if (!is_dir($binDir) && !mkdir($binDir, 0700, true)) {
+                $this->out(' Failed to create directory: ' . $binDir, 'error');
+                exit(1);
+            }
+
+            $destination = $binDir . DIRECTORY_SEPARATOR . $this->executable;
+            if (!rename($pharPath, $destination)) {
+                $this->out(' Failed to move the Phar to: ' . $destination, 'error');
+                exit(1);
+            }
+
+            $this->output('  Executable location: ' . $pharPath);
+        } else {
+            $this->out('  The HOME environment variable must be set for dcm to run correctly', 'error');
+            exit(1);
+        }
+        $this->out(PHP_EOL."The dcm (version {$latestVersion}) successfully installed to: {$homeDir}", 'success');
+        $this->out("Use it: php {$this->executable}", 'info');
+
+        exit(0);
     }
 
-    private function findLatestVersion($url): ?string {
+    /**
+     * @param string $version
+     *
+     * @return array
+     */
+    private function download(string $version): array
+    {
+        $url = sprintf($this->releaseUrl, $version);
+        $signatureUrl =sprintf($this->signratureUrl, $version);
+        $opts = $this->getStreamContext(300);
+        $contents = \file_get_contents($url, false, \stream_context_create($opts));
+        if ($contents === false) {
+            $this->out('The download failed', 'error');
+            exit(1);
+        }
+        if (!file_put_contents($this->pharName, $contents)) {
+            $this->out('Failed to write to file: '.$this->pharName, 'error');
+            exit(1);
+        }
+        $signatureContents = \file_get_contents($signatureUrl, false, \stream_context_create($opts));
+        if ($signatureContents === false) {
+            $this->out('The signature file download failed', 'error');
+            exit(1);
+        }
+        return json_decode($signatureContents, true);
+    }
+
+    /**
+     * @return string|null
+     */
+    private function findLatestVersion(): ?string {
+        $url = $this->packagistUrl;
         $packageInfo = file_get_contents($url, false, \stream_context_create($this->getStreamContext(15)));
         if ($packageInfo === false) {
             $this->out(PHP_EOL . "Failed to download package information file: ".$url, 'error');
@@ -76,11 +167,17 @@ class Installer {
         }
         if (!isset($packageInfo['packages']) || !isset($packageInfo['packages'][self::PACKAGE_NAME])) {
             $this->out(PHP_EOL . "Failed to read package information file: ".$url, 'error');
+            exit(1);
         }
         $versions = $packageInfo['packages'][self::PACKAGE_NAME];
         return  $this->findInstallableVersion($versions);
     }
 
+    /**
+     * @param array $versions
+     *
+     * @return string|null
+     */
     private function findInstallableVersion(array $versions): ?string
     {
         $phpVersion = PHP_VERSION;
@@ -104,6 +201,9 @@ class Installer {
         exit(1);
     }
 
+    /**
+     * @return void
+     */
     private function envCheck(): void
     {
         // Check that the JSON and Phar extensions are installed (needed in this script).
@@ -170,6 +270,26 @@ class Installer {
         }
 
         printf($format, $text);
+    }
+
+    /**
+     * Finds the user's home directory.
+     *
+     * @return string|false
+     *   The user's home directory as an absolute path, or false on failure.
+     */
+    private function getHomeDirectory() {
+        $vars = ['HOME', 'USERPROFILE'];
+        foreach ($vars as $var) {
+            if ($home = getenv($var)) {
+                return realpath($home) ?: $home;
+            }
+        }
+        if (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
+            return $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
+        }
+
+        return false;
     }
 
     /**
