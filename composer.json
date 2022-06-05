@@ -11,7 +11,9 @@
         "ext-iconv": "*",
         "symfony/console": "^5.4",
         "symfony/process": "^5.4",
-        "symfony/serializer": "^5.4"
+        "symfony/serializer": "^5.4",
+        "stecman/symfony-console-completion": "^0.11.0",
+        "symfony/filesystem": "^5.4"
     },
     "authors": [
         {

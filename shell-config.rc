@@ -1,0 +1,6 @@
+# Test for Bash or ZSH. Include shell-config-bash.rc if it exists.
+if [ "$BASH" ] || [ "$SHELL" = /bin/zsh ] || [ "$ZSH" ]; then
+    if [ -f "$HOME/.dcm/shell-config-bash.rc" ]; then
+        . "$HOME/.dcm/shell-config-bash.rc" 2>/dev/null
+    fi
+fi

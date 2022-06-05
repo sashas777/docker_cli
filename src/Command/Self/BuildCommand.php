@@ -26,7 +26,7 @@ class BuildCommand extends Command
     /**
      * @var string
      */
-    protected static $defaultName = 'selfbuild';
+    protected static $defaultName = 'self:build';
     /**
      * @var string
      */
@@ -131,7 +131,7 @@ class BuildCommand extends Command
             CLI_ROOT . $this->config->getData('release_signature_relative_path'),
             $serializer->encode($releaseInfo, JsonEncoder::FORMAT)
         );
-        
+
         $output->writeln($releaseInfo);
 
         return Command::SUCCESS;

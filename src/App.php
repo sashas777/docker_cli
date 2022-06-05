@@ -10,7 +10,9 @@ declare(strict_types=1);
 namespace Dcm\Cli;
 
 use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Command\HelpCommand;
 use Symfony\Component\Console\Command\ListCommand;
+use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand;
 
 /**
  * Class App
@@ -37,7 +39,7 @@ class App extends Application
      */
     protected function getDefaultCommands()
     {
-        return [new ListCommand()];
+        return [new ListCommand(), new HelpCommand(), new CompletionCommand()];
     }
 
     /**
@@ -47,6 +49,7 @@ class App extends Application
     {
         $commands[] = new Command\Self\BuildCommand();
         $commands[] = new Command\Self\UpdateCommand();
+        $commands[] = new Command\Self\InstallCommand();
         return $commands;
     }
 }

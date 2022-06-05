@@ -1,0 +1,7 @@
+# Shell configuration for Bash and ZSH.
+
+# Enable auto-completion.
+if [ -f "$HOME/.dcm/autocompletion.sh" ]; then
+    . "$HOME/.dcm/autocompletion.sh" 2>/dev/null
+fi
+

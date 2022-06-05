@@ -6,7 +6,9 @@
   "files": [
     "constants.php",
     "vendor/autoload.php",
-    "config/config.json"
+    "config/config.json",
+    "shell-config-bash.rc",
+    "shell-config.rc"
   ],
   "finder": [
     {

@@ -1,7 +1,10 @@
 {
   "version": "1.0.0",
   "name": "Docker Container Manager",
-  "release_relative_path": "release/dcm.phar",
-  "release_signature_relative_path": "/release/signature.json",
-  "box_config_relative_path": "/config/box.json"
+  "short_name": "dcm",
+  "executable": "dcm",
+  "release_relative_path": "dist/dcm.phar",
+  "release_signature_relative_path": "/dist/signature.json",
+  "box_config_relative_path": "/config/box.json",
+  "user_config_dir": ".dcm"
 }

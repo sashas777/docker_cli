@@ -1,6 +1,5 @@
 <?php
 /**
- * @file
  * Docker Container Manager installer.
  *
  * This script will check requirements, download the CLI, move it into place.
@@ -34,8 +33,8 @@ class Installer {
     private $cliName = 'Docker Container Manager';
     private $packagistUrl = 'https://repo.packagist.org/p2/'.self::PACKAGE_NAME.'.json';
     private $pharName = 'dcm.phar';
-    private $signratureUrl = 'https://github.com/sashas777/docker_cli/raw/%s/release/signature.json';
-    private $releaseUrl = 'https://github.com/sashas777/docker_cli/raw/%s/release/dcm.phar';
+    private $signratureUrl = 'https://github.com/sashas777/docker_cli/raw/%s/dist/signature.json';
+    private $releaseUrl = 'https://github.com/sashas777/docker_cli/raw/%s/dist/dcm.phar';
     private $configDir = '.dcm';
     private $executable = 'dcm';
     private $argv;
@@ -56,50 +55,98 @@ class Installer {
         ini_set('display_errors', 1);
 
         $this->out($this->cliName . " CLI installer", 'info');
-        // Run environment checks.
+
         $this->out(PHP_EOL . "Environment check", 'info');
         $this->envCheck();
-        $this->out('  [*] Completed.', 'success');
+        $this->out('  Done.', 'success');
 
-        $this->out(PHP_EOL .'Finding the latest version', 'info');
+        $this->out(PHP_EOL .'Download', 'info');
+        $this->out('  Finding the latest version... ', null, false);
         $latestVersion = $this->findLatestVersion();
-        $this->out('  [*] Completed.', 'success');
+        $this->out($latestVersion, 'success');
 
-        $this->out(PHP_EOL . 'Downloading version '.$latestVersion, 'info');
+        $this->out('  Downloading version '.$latestVersion.' ... ', null, false);
         $signature = $this->download($latestVersion);
-        $this->out('  [*] Completed.', 'success');
+        $this->out('done.', 'success');
 
-        $this->out(PHP_EOL . 'Checking file integrity', 'info');
+        $this->out('  Checking file integrity... ', null, false);
         $pharPath = realpath($this->pharName) ?: $this->pharName;
-
         if ($signature['sha-256'] !== hash_file('sha256', $pharPath)) {
             unlink($pharPath);
-            $this->out('The download was incomplete, or the file is corrupted', 'error');
+            $this->out('  The download was incomplete, or the file is corrupted', 'error');
             exit(1);
         }
-        $this->out('  [*] Completed.', 'success');
+        $this->out('done.', 'success');
 
-        $this->out(PHP_EOL . 'Checking that the file is a valid Phar', 'info');
+        $this->out('  Checking that the file is a valid Phar... ', null, false);
         try {
             new \Phar($pharPath);
         } catch (\Exception $e) {
             $this->out('  The file is not a valid Phar archive'. "\n" . $e->getMessage(), 'error');
             exit(1);
         }
-        $this->out('  [*] Completed.', 'success');
+        $this->out('done.', 'success');
 
-
-
-        $this->out(PHP_EOL . 'Making the Phar executable', 'info');
+        $this->out(PHP_EOL .'Installation', 'info');
+        $this->out('  Making the Phar executable... ', null, false);
         if (!chmod($pharPath, 0755)) {
             $this->out('  Failed to make the Phar executable', 'error');
             exit(1);
         }
-        $this->out('  [*] Completed.', 'success');
+        $this->out('done.', 'success');
 
+        $this->out('  Moving the Phar to your home directory... ', null, false);
+        $pharPath = $this->moveToHome($pharPath);
+        $this->out('done.', 'success');
+
+        $command = 'php ' . escapeshellarg($pharPath) . ' self:install';
+        $this->out(PHP_EOL . 'Running self:install command...');
+        $exitCode = $this->runCommand($command, true);
+
+        exit($exitCode);
+    }
+
+    /**
+     * Runs a shell command.
+     *
+     * @param string $cmd
+     * @param bool $forceStdout Whether to redirect all stderr output to stdout.
+     *
+     * @return int The command's exit code.
+     */
+    private function runCommand($cmd, $forceStdout = false) {
+        /*
+         * Set up the STDIN, STDOUT and STDERR constants.
+         *
+         * Due to a PHP bug, these constants are not available when the PHP script
+         * is being read from stdin.
+         *
+         * See https://bugs.php.net/bug.php?id=43283
+         */
+        if (!defined('STDIN')) {
+            define('STDIN', fopen('php://stdin', 'r'));
+        }
+        if (!defined('STDOUT')) {
+            define('STDOUT', fopen('php://stdout', 'w'));
+        }
+        if (!defined('STDERR')) {
+            define('STDERR', fopen('php://stderr', 'w'));
+        }
+
+        $process = proc_open($cmd, [STDIN, STDOUT, $forceStdout ? STDOUT : STDERR], $pipes);
+
+        return proc_close($process);
+    }
+
+    /**
+     * @param string $pharPath
+     *
+     * @return string
+     */
+    private function moveToHome(string $pharPath): string
+    {
+        $destination = $pharPath;
         if ($homeDir = $this->getHomeDirectory()) {
-            $this->out(PHP_EOL . 'Moving the Phar to your home directory', 'info');
-
             $binDir = $homeDir . DIRECTORY_SEPARATOR . $this->configDir . DIRECTORY_SEPARATOR . 'bin';
             if (!is_dir($binDir) && !mkdir($binDir, 0700, true)) {
                 $this->out(' Failed to create directory: ' . $binDir, 'error');
@@ -112,15 +159,11 @@ class Installer {
                 exit(1);
             }
 
-            $this->output('  Executable location: ' . $pharPath);
         } else {
             $this->out('  The HOME environment variable must be set for dcm to run correctly', 'error');
             exit(1);
         }
-        $this->out(PHP_EOL."The dcm (version {$latestVersion}) successfully installed to: {$homeDir}", 'success');
-        $this->out("Use it: php {$this->executable}", 'info');
-
-        exit(0);
+        return $destination;
     }
 
     /**
@@ -157,16 +200,16 @@ class Installer {
         $url = $this->packagistUrl;
         $packageInfo = file_get_contents($url, false, \stream_context_create($this->getStreamContext(15)));
         if ($packageInfo === false) {
-            $this->out(PHP_EOL . "Failed to download package information file: ".$url, 'error');
+            $this->out("  Failed to download package information file: ".$url, 'error');
             exit(1);
         }
         $packageInfo = json_decode($packageInfo, true);
         if ($packageInfo === null) {
-            $this->out(PHP_EOL . "Failed to decode package information file: ".$url, 'error');
+            $this->out("  Failed to decode package information file: ".$url, 'error');
             exit(1);
         }
         if (!isset($packageInfo['packages']) || !isset($packageInfo['packages'][self::PACKAGE_NAME])) {
-            $this->out(PHP_EOL . "Failed to read package information file: ".$url, 'error');
+            $this->out("  Failed to read package information file: ".$url, 'error');
             exit(1);
         }
         $versions = $packageInfo['packages'][self::PACKAGE_NAME];
@@ -188,16 +231,16 @@ class Installer {
             $cliMinVersion = str_replace('~','', $version['require']['php']);
             if (version_compare($phpVersion, $cliMinVersion, '<')) {
                 if ($this->flagEnabled('v')) {
-                    $this->out(sprintf('Version %s requires PHP %s (current PHP version is %s)', $version['version'], $cliMinVersion, $phpVersion), 'info');
+                    $this->out(sprintf('  Version %s requires PHP %s (current PHP version is %s)', $version['version'], $cliMinVersion, $phpVersion), 'info');
                 }
                 continue;
             }
             if ($this->flagEnabled('v')) {
-                $this->out(sprintf('Version %s requires PHP %s (current PHP version is %s)', $version['version'], $cliMinVersion, $phpVersion), 'success');
+                $this->out(sprintf('  Version %s requires PHP %s (current PHP version is %s)', $version['version'], $cliMinVersion, $phpVersion), 'success');
             }
             return (string) $version['version'];
         }
-        $this->out(PHP_EOL . 'No installable versions were found.', 'error');
+        $this->out(PHP_EOL . '  No installable versions were found.', 'error');
         exit(1);
     }
 
@@ -218,16 +261,16 @@ class Installer {
         $this->checkExtension('tokenizer'); // Symfony
         // Either mbstring or iconv is required by Symfony Console (even though this is not enforced in its composer.json).
         $this->check(
-            'One or both of the "mbstring" or "iconv" PHP extensions is installed.',
-            'One or both of the "mbstring" or "iconv" PHP extensions is required.',
+            '  One or both of the "mbstring" or "iconv" PHP extensions is installed.',
+            '  One or both of the "mbstring" or "iconv" PHP extensions is required.',
             function () {
                 return \extension_loaded('mbstring') || \extension_loaded('iconv');
             }
         );
         // Check whether PHP can open files via URLs.
         $this->check(
-            'The "allow_url_fopen" setting is on.',
-            'The "allow_url_fopen" setting is off; it must be on.',
+            '  The "allow_url_fopen" setting is on.',
+            '  The "allow_url_fopen" setting is off; it must be on.',
             function () {
                 return (true == ini_get('allow_url_fopen'));
             }
@@ -235,8 +278,8 @@ class Installer {
 
         // Check a troublesome APC setting.
         $this->check(
-            'The "apc.enable_cli" setting is off.',
-            'Warning: the "apc.enable_cli" is on; this may cause problems with Phar files.',
+            '  The "apc.enable_cli" setting is off.',
+            '  Warning: the "apc.enable_cli" is on; this may cause problems with Phar files.',
             function () {
                 return (false == ini_get('apc.enable_cli'));
             },
@@ -318,7 +361,7 @@ class Installer {
             if (!\file_exists($extPath)) {
                 continue;
             }
-            $this->out("The extension already exists at: $extPath");
+            $this->out("  The extension already exists at: $extPath");
             if (!empty(PHP_CONFIG_FILE_SCAN_DIR) && \is_dir(PHP_CONFIG_FILE_SCAN_DIR)) {
                 $this->out(
                     "\nTo enable it, create a file named: " . PHP_CONFIG_FILE_SCAN_DIR . DIRECTORY_SEPARATOR . "$extension.ini"
