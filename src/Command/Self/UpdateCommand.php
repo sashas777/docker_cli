@@ -92,7 +92,7 @@ class UpdateCommand extends Command
         }
 
         if ($currentVersion == $newVersion) {
-            $output->writeln('<success>No updates found</success>');
+            $output->writeln('<info>No updates found</info>');
             return Command::SUCCESS;
         }
         $output->writeln(sprintf('Version <info>%s</info> is available. Release notes:', $newVersion));
