@@ -11,7 +11,7 @@ namespace Dcm\Cli;
 
 use Dcm\Cli\Service\DataObject;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
-use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Serializer\Encoder\JsonDecode;
 
 /**
  * Class Config
@@ -21,19 +21,22 @@ class Config extends DataObject
     private $homeDir;
     private $env;
 
+    private $serializer;
+
     /**
      * Configuration relative path
      */
     const CONFIG_FILE = '/config/config.json';
 
     /**
+     * @param JsonEncoder $serializer
      * @param array $data
      */
-    public function __construct(array $data = [])
+    public function __construct(JsonEncoder $serializer, array $data = [])
     {
-        $serializer = new Serializer([], [new JsonEncoder()]);
+        $this->serializer = $serializer;
         $config = file_get_contents(CLI_ROOT . static::CONFIG_FILE);
-        $data = $serializer->decode($config, JsonEncoder::FORMAT);
+        $data = $this->serializer->decode($config, JsonEncoder::FORMAT, [JsonDecode::ASSOCIATIVE =>true]);
         if (!is_array($data)) {
             $data = [];
         }
@@ -84,7 +87,7 @@ class Config extends DataObject
             }
         }
 
-        throw new \RuntimeException(sprintf('Could not determine home directory. Set the %s environment variable.', $prefix . 'HOME'));
+        throw new \RuntimeException('Could not determine home directory. Set the HOME environment variable.');
     }
 
     /**

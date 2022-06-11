@@ -15,8 +15,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Console\Helper\FormatterHelper;
+use Symfony\Component\Serializer\Encoder\JsonDecode;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
-use Symfony\Component\Serializer\Serializer;
 
 /**
  * Class BuildCommand
@@ -43,6 +43,26 @@ class BuildCommand extends Command
     private $config;
 
     /**
+     * @var JsonEncoder
+     */
+    private $serializer;
+
+    /**
+     * @param Config $config
+     * @param JsonEncoder $serializer
+     * @param string|null $name
+     */
+    public function __construct(
+        Config $config,
+        JsonEncoder $serializer,
+        string $name = null
+    ) {
+        $this->config = $config;
+        $this->serializer = $serializer;
+        parent::__construct($name);
+    }
+
+    /**
      * Disable when a Phar build run from another Phar.
      * @return bool
      */
@@ -60,8 +80,6 @@ class BuildCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->output = $output;
-        $this->config = new Config();
-        $serializer = new Serializer([], [new JsonEncoder()]);
 
         if (!file_exists(CLI_ROOT . '/vendor')) {
             $output->writeln(sprintf('<error>Directory not found: %s/vendor</error>', CLI_ROOT));
@@ -82,14 +100,15 @@ class BuildCommand extends Command
         }
 
         if (!empty($boxConfig)) {
-            $originalConfig = $serializer->decode(
+            $originalConfig = $this->serializer->decode(
                 file_get_contents(CLI_ROOT . $this->config->getData('box_config_relative_path')),
-                JsonEncoder::FORMAT
+                JsonEncoder::FORMAT,
+                [JsonDecode::ASSOCIATIVE =>true]
             );
             $boxConfig = array_merge($originalConfig, $boxConfig);
             $boxConfig['base-path'] = CLI_ROOT;
             $tmpJson = tempnam(sys_get_temp_dir(), 'cli-box-');
-            file_put_contents($tmpJson, $serializer->encode($boxConfig, JsonEncoder::FORMAT));
+            file_put_contents($tmpJson, $this->serializer->encode($boxConfig, JsonEncoder::FORMAT));
             $boxArgs[] = '--config=' . $tmpJson;
         }
 
@@ -129,7 +148,7 @@ class BuildCommand extends Command
         ];
         file_put_contents(
             CLI_ROOT . $this->config->getData('release_signature_relative_path'),
-            $serializer->encode($releaseInfo, JsonEncoder::FORMAT)
+            $this->serializer->encode($releaseInfo, JsonEncoder::FORMAT)
         );
 
         $output->writeln($releaseInfo);

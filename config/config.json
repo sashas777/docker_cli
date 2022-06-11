@@ -1,10 +1,16 @@
 {
   "version": "1.0.0",
-  "name": "Docker Container Manager",
+  "name": "Docker Container Manager CLI",
+  "packagist_url": "https://repo.packagist.org/p2/thesgroup/docker-container-manager.json",
+  "release_url": "https://github.com/sashas777/docker_cli/raw/%s/dist/dcm.phar",
+  "signature_url": "https://github.com/sashas777/docker_cli/raw/%s/dist/signature.json",
+  "package_name": "thesgroup/docker-container-manager",
   "short_name": "dcm",
   "executable": "dcm",
+  "phar_name": "dcm.phar",
   "release_relative_path": "dist/dcm.phar",
   "release_signature_relative_path": "/dist/signature.json",
   "box_config_relative_path": "/config/box.json",
-  "user_config_dir": ".dcm"
+  "user_config_dir": ".dcm",
+  "update_backup_ext": ".bak"
 }

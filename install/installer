@@ -33,7 +33,7 @@ class Installer {
     private $cliName = 'Docker Container Manager';
     private $packagistUrl = 'https://repo.packagist.org/p2/'.self::PACKAGE_NAME.'.json';
     private $pharName = 'dcm.phar';
-    private $signratureUrl = 'https://github.com/sashas777/docker_cli/raw/%s/dist/signature.json';
+    private $signatureUrl = 'https://github.com/sashas777/docker_cli/raw/%s/dist/signature.json';
     private $releaseUrl = 'https://github.com/sashas777/docker_cli/raw/%s/dist/dcm.phar';
     private $configDir = '.dcm';
     private $executable = 'dcm';
@@ -174,7 +174,7 @@ class Installer {
     private function download(string $version): array
     {
         $url = sprintf($this->releaseUrl, $version);
-        $signatureUrl =sprintf($this->signratureUrl, $version);
+        $signatureUrl = sprintf($this->signatureUrl, $version);
         $opts = $this->getStreamContext(300);
         $contents = \file_get_contents($url, false, \stream_context_create($opts));
         if ($contents === false) {

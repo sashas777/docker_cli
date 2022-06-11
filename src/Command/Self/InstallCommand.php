@@ -19,11 +19,13 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Dcm\Cli\Service\Snippeter;
 
+/**
+ * Class InstallCommand
+ */
 class InstallCommand extends Command
 {
     protected static $defaultName = 'self:install';
     protected static $defaultDescription = 'Install or update CLI configuration files';
-
     private static $container;
 
     /**
@@ -37,11 +39,19 @@ class InstallCommand extends Command
     private $output;
 
     /**
+     * @var Filesystem
+     */
+    private $fs;
+
+    /**
+     * @param Config $config
+     * @param Filesystem $fs
      * @param string|null $name
      */
-    public function __construct(string $name = null)
+    public function __construct(Config $config, Filesystem $fs, string $name = null)
     {
-        $this->config = new Config();
+        $this->config = $config;
+        $this->fs = $fs;
         parent::__construct($name);
     }
 
@@ -75,13 +85,13 @@ EOT
             'shell-config.rc',
             'shell-config-bash.rc',
         ];
-        $fs = new Filesystem();
+
         try {
             foreach ($requiredFiles as $requiredFile) {
                 if (($contents = file_get_contents(CLI_ROOT . DIRECTORY_SEPARATOR . $requiredFile)) === false) {
                     throw new \RuntimeException(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $requiredFile));
                 }
-                $fs->dumpFile($configDir . DIRECTORY_SEPARATOR . $requiredFile, $contents);
+                $this->fs->dumpFile($configDir . DIRECTORY_SEPARATOR . $requiredFile, $contents);
             }
         } catch (\Exception $e) {
             $output->writeln('<error>'.$this->indentAndWrap($e->getMessage()).'</error>');
@@ -108,7 +118,7 @@ EOT
             $exitCode = $this->runCommand('_completion', $buffer, $args);
 
             if ($exitCode === 0 && ($autoCompleteHook = $buffer->fetch())) {
-                $fs->dumpFile($configDir . '/autocompletion.sh', $autoCompleteHook);
+                $this->fs->dumpFile($configDir . '/autocompletion.sh', $autoCompleteHook);
                 $output->writeln(' <info>done</info>');
             }
         } catch (\Exception $e) {

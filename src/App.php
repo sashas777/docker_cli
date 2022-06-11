@@ -27,10 +27,15 @@ class App extends Application
     /**
      *
      */
-    public function __construct()
+    public function __construct(iterable $commands, Config $config)
     {
-        $this->config = new Config();
-        $this->addCommands($this->getCommands());
+        $this->config = $config;
+        $commands = $commands instanceof \Traversable ? \iterator_to_array($commands) : $commands;
+
+        foreach ($commands as $command) {
+            $this->add($command);
+        }
+
         parent::__construct($this->config->getName(), $this->config->getVersion());
     }
 
@@ -42,14 +47,4 @@ class App extends Application
         return [new ListCommand(), new HelpCommand(), new CompletionCommand()];
     }
 
-    /**
-     * @return \Symfony\Component\Console\Command\Command[]
-     */
-    private function getCommands(): array
-    {
-        $commands[] = new Command\Self\BuildCommand();
-        $commands[] = new Command\Self\UpdateCommand();
-        $commands[] = new Command\Self\InstallCommand();
-        return $commands;
-    }
 }
