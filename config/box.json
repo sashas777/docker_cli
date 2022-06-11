@@ -7,6 +7,7 @@
     "constants.php",
     "vendor/autoload.php",
     "config/config.json",
+    "config/services.php",
     "shell-config-bash.rc",
     "shell-config.rc"
   ],
