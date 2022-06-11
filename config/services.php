@@ -25,7 +25,7 @@ return function(ContainerConfigurator $configurator) {
              ->public();
 
     $services->load('Symfony\\Component\\HttpClient\\', '../vendor/symfony/http-client/');
-    $services->load('Symfony\\Component\\Serializer\\', '../vendor/symfony/serializer/');
+    $services->load('Symfony\\Component\\Serializer\\', CLI_ROOT.'/vendor/symfony/serializer/');
     $services->load('Symfony\\Component\\Filesystem\\', '../vendor/symfony/filesystem');
     $services->load('Symfony\\Component\\Process\\', '../vendor/symfony/process');
     $services->load('Symfony\\Component\\Finder\\', '../vendor/symfony/finder');
