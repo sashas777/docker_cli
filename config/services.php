@@ -28,6 +28,7 @@ return function(ContainerConfigurator $configurator) {
     $services->load('Symfony\\Component\\Serializer\\', '../vendor/symfony/serializer/');
     $services->load('Symfony\\Component\\Filesystem\\', '../vendor/symfony/filesystem');
     $services->load('Symfony\\Component\\Process\\', '../vendor/symfony/process');
+    $services->load('Symfony\\Component\\Finder\\', '../vendor/symfony/finder');
     $services->load('Stecman\\Component\\Symfony\\Console\\BashCompletion\\', '../vendor/stecman/symfony-console-completion/src');
     
     $services->set(App::class)
