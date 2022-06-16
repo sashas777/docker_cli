@@ -73,7 +73,7 @@ class Updater
     public function findLatestVersion(): ?string {
         $url = $this->config->getData('packagist_url');
 
-        $content = $this->getHttpContent($url);
+        $content = $this->client->getHttpContent($url);
         if (!$content) {
             throw new \Exception('Failed to download package information file');
         }

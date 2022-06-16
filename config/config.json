@@ -1,5 +1,5 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "name": "Docker Container Manager CLI",
   "packagist_url": "https://repo.packagist.org/p2/thesgroup/docker-container-manager.json",
   "release_url": "https://github.com/sashas777/docker_cli/raw/%s/dist/dcm.phar",

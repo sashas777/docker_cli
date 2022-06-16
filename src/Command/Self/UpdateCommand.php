@@ -107,7 +107,7 @@ class UpdateCommand extends Command
 
         /** @var \Symfony\Component\Console\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
-        $question = new ConfirmationQuestion(sprintf('Update to version <info>%s</info>? (Y/n) ', $newVersion), true);
+        $question = new ConfirmationQuestion(sprintf('Update to version <info>%s</info>? <comment>(Y/n)</comment> ', $newVersion), true);
         if (!$questionHelper->ask($input, $output, $question)) {
             return Command::SUCCESS;
         }
