@@ -1,0 +1,32 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+use Symfony\Component\Config\FileLocator;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
+use Dcm\Cli\App;
+
+ini_set('display_errors', 'stderr');
+
+error_reporting(getenv('CLI_DEBUG') ? E_ALL : E_ALL & ~E_DEPRECATED);
+
+if (version_compare(PHP_VERSION, '7.4.0', '<')) {
+    printf("This tool requires at least PHP 7.4.0. You currently have %s installed. Please upgrade your PHP version.\n", PHP_VERSION);
+    exit(1);
+}
+
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require __DIR__ . '/../vendor/autoload.php';
+} else {
+    echo "Composer autoload file not found.\n";
+    echo "You need to run 'composer install'.\n";
+    exit(1);
+}
+
+$container = new ContainerBuilder();
+$loader = new PhpFileLoader($container, new FileLocator());
+$loader->load(__DIR__.'/../config/services.php');
+
+$container->compile();
+($container->get(App::class))->run();

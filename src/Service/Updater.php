@@ -10,7 +10,6 @@ declare(strict_types=1);
 namespace Dcm\Cli\Service;
 
 use Dcm\Cli\Config;
-use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\Serializer\Encoder\JsonDecode;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 
@@ -43,7 +42,7 @@ class Updater
     private $config;
 
     /**
-     * @var HttpClient
+     * @var HttpRequest
      */
     private $client;
 
@@ -54,12 +53,12 @@ class Updater
 
     /**
      * @param Config $config
-     * @param HttpClient $client
+     * @param HttpRequest $client
      * @param JsonEncoder $serializer
      */
     public function __construct(
         Config $config,
-        HttpClient $client,
+        HttpRequest $client,
         JsonEncoder $serializer
     ) {
         $this->config = $config;
@@ -87,24 +86,6 @@ class Updater
         return  $this->findInstallableVersion($versions);
     }
 
-    /**
-     * @param string $url
-     *
-     * @return string|null
-     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
-     */
-    private function getHttpContent(string $url): ?string
-    {
-        $response = $this->client->create()->request('GET', $url);
-        if ($response->getStatusCode() != 200) {
-            throw new \Exception('Invalid response code: '.$response->getStatusCode().' '.$url);
-        }
-
-        return $response->getContent();
-    }
     /**
      * @param array $versions
      *
@@ -189,7 +170,7 @@ class Updater
         $signatureUrl = sprintf($this->config->getData('signature_url'), $version);
         $this->pharName = $this->binDir . DIRECTORY_SEPARATOR . $this->config->getData('phar_name');
 
-        $contents = $this->getHttpContent($url);
+        $contents = $this->client->getHttpContent($url);
         if (!$contents) {
             $this->cleanupAfterError();
             throw new \Exception('The download failed');
@@ -198,7 +179,7 @@ class Updater
             $this->cleanupAfterError();
             throw new \Exception('Failed to write to file: '.$this->pharName);
         }
-        $signatureContents = $this->getHttpContent($signatureUrl);
+        $signatureContents = $this->client->getHttpContent($signatureUrl);
         if (!$signatureContents) {
             $this->cleanupAfterError();
             throw new \Exception('The signature file download failed');

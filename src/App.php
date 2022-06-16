@@ -40,6 +40,19 @@ class App extends Application
     }
 
     /**
+     * @return string
+     */
+    public function getLongVersion()
+    {
+        $version = parent::getLongVersion();
+        if (is_array($envConfig = $this->config->getDotEnvConfig())) {
+            $version.="\n\nCurrent Environment: <info>".$envConfig['PROJECT_NAME']."</info>";
+            $version.="\nEnvironment Domain: <info>".$envConfig['WEBSITE_DOMAIN']."</info>";
+        }
+
+        return $version;
+    }
+    /**
      * @inheritdoc
      */
     protected function getDefaultCommands()

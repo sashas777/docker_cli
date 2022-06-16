@@ -1,5 +1,5 @@
 {
-  "version": "0.0.11",
+  "version": "1.0.0",
   "name": "Docker Container Manager CLI",
   "packagist_url": "https://repo.packagist.org/p2/thesgroup/docker-container-manager.json",
   "release_url": "https://github.com/sashas777/docker_cli/raw/%s/dist/dcm.phar",
@@ -12,5 +12,102 @@
   "release_signature_relative_path": "/dist/signature.json",
   "box_config_relative_path": "/config/box.json",
   "user_config_dir": ".dcm",
-  "update_backup_ext": ".bak"
+  "update_backup_ext": ".bak",
+  "dockerhub_tag_pattern": "https://registry.hub.docker.com/v2/repositories/%s/tags/?page_size=%s",
+  "dockerhub_specific_tag_pattern": "https://registry.hub.docker.com/v2/repositories/%s/tags/%s/",
+  "local_base": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Environment/parts/base.yml",
+  "local_services_base": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Services/parts/base.yml",
+  "local_part": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Environment/parts/%s.yml",
+  "global_env": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Environment/parts/global.env",
+  "traefik_dynamic": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Services/traefik/dynamic.yml",
+  "traefik_app": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Services/traefik/traefik.yml",
+  "mysql_config": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Services/mysql/custom-config.cnf",
+  "compose_file": "docker-compose.yml",
+  "global_env_file": "global.env",
+  "env_file": ".env",
+  "env_default_config": {
+    "timezone": "America/New_York",
+    "magento_run_mode": "developer",
+    "php_memory_limit": "4096M",
+    "magento_composer_username": "",
+    "magento_composer_password": ""
+  },
+  "docker_env_services": {
+    "cli": {
+      "name": "PHP CLI",
+      "repo": "sashas777/magento-php",
+      "version_pattern": "/-cli/"
+    },
+    "fpm": {
+      "name": "PHP FPM",
+      "repo": "sashas777/magento-php",
+      "version_pattern": "/-fpm/"
+    },
+    "web": {
+      "name": "Nginx",
+      "repo": "sashas777/magento-nginx",
+      "hostname": "https://%s",
+      "version_pattern": false
+    },
+    "elasticsearch": {
+      "name": "ElasticSearch",
+      "repo": "sashas777/magento-elasticsearch",
+      "hostname": "elasticsearch.%s",
+      "version_pattern": false
+    },
+    "varnish": {
+      "name": "Varnish [Not Tested]",
+      "repo": "sashas777/magento-varnish",
+      "version_pattern": false
+    },
+    "redis": {
+      "name": "Redis",
+      "repo": "sashas777/magento-redis",
+      "hostname": "redis.%s",
+      "version_pattern": false
+    },
+    "rabbitmq": {
+      "name": "RabbitMQ",
+      "repo": "library/rabbitmq",
+      "hostname": "rabbitmq.%s",
+      "version_pattern": "/^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+)$/"
+    }
+  },
+  "docker_local_services": {
+    "traefik": {
+      "name": "Traefik",
+      "repo": "library/traefik",
+      "is_required": true,
+      "domain": "traefik.local.test",
+      "url": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Services/parts/traefik.yml"
+    },
+    "mailhog": {
+      "name": "MailHog",
+      "repo": "sashas777/magento-mailhog",
+      "is_required": true,
+      "domain": "mailhog.local.test",
+      "url": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Services/parts/mailhog.yml"
+    },
+    "adminer": {
+      "name": "Adminer",
+      "repo": "library/adminer",
+      "is_required": false,
+      "domain": "adminer.local.test",
+      "url": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Services/parts/adminer.yml"
+    },
+    "portainer": {
+      "name": "Portainer",
+      "repo": "library/portainer",
+      "is_required": false,
+      "domain": "portainer.local.test",
+      "url": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Services/parts/portainer.yml"
+    },
+    "db": {
+      "name": "MariaDB",
+      "repo": "library/mariadb",
+      "is_required": true,
+      "domain": "",
+      "url": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Services/parts/db.yml"
+    }
+  }
 }

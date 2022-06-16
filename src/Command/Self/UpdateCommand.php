@@ -95,7 +95,7 @@ class UpdateCommand extends Command
             $output->writeln('<info>No updates found</info>');
             return Command::SUCCESS;
         }
-        $output->writeln(sprintf('Version <info>%s</info> is available. Release notes:', $newVersion));
+        $output->writeln(sprintf('Version <info>%s</info> is available.', $newVersion));
         if (version_compare($currentVersion, $newVersion, '>')) {
             $output->writeln('<comment>'.sprintf(
                     ' The new version is lower than the current installed version (new version is %s, current version is %s).',
@@ -107,7 +107,7 @@ class UpdateCommand extends Command
 
         /** @var \Symfony\Component\Console\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
-        $question = new ConfirmationQuestion(sprintf('Update to version <info>%s</info>? (Y/n)', $newVersion), true);
+        $question = new ConfirmationQuestion(sprintf('Update to version <info>%s</info>? (Y/n) ', $newVersion), true);
         if (!$questionHelper->ask($input, $output, $question)) {
             return Command::SUCCESS;
         }

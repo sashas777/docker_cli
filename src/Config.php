@@ -12,6 +12,7 @@ namespace Dcm\Cli;
 use Dcm\Cli\Service\DataObject;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Encoder\JsonDecode;
+use Dcm\Cli\Service\Dotenv;
 
 /**
  * Class Config
@@ -21,7 +22,15 @@ class Config extends DataObject
     private $homeDir;
     private $env;
 
+    /**
+     * @var JsonEncoder
+     */
     private $serializer;
+
+    /**
+     * @var Dotenv
+     */
+    private $dotenv;
 
     /**
      * Configuration relative path
@@ -30,11 +39,16 @@ class Config extends DataObject
 
     /**
      * @param JsonEncoder $serializer
+     * @param Dotenv $dotenv
      * @param array $data
      */
-    public function __construct(JsonEncoder $serializer, array $data = [])
-    {
+    public function __construct(
+        JsonEncoder $serializer,
+        Dotenv $dotenv, array
+        $data = []
+    ) {
         $this->serializer = $serializer;
+        $this->dotenv = $dotenv;
         $config = file_get_contents(CLI_ROOT . static::CONFIG_FILE);
         $data = $this->serializer->decode($config, JsonEncoder::FORMAT, [JsonDecode::ASSOCIATIVE =>true]);
         if (!is_array($data)) {
@@ -93,7 +107,7 @@ class Config extends DataObject
     /**
      * @return bool
      */
-    public static function isOsX(): bool
+    public function isOsX(): bool
     {
         return stripos(PHP_OS, 'Darwin') !== false;
     }
@@ -101,7 +115,7 @@ class Config extends DataObject
     /**
      * @return bool
      */
-    public static function isWindows(): bool
+    public function isWindows(): bool
     {
         return defined('PHP_WINDOWS_VERSION_BUILD');
     }
@@ -109,8 +123,20 @@ class Config extends DataObject
     /**
      * @return bool
      */
-    public static function isLinux(): bool
+    public function isLinux(): bool
     {
         return stripos(PHP_OS, 'Linux') !== false;
     }
+
+    /**
+     * @return array|null
+     */
+    public function getDotEnvConfig(): ?array
+    {
+        if (is_readable($this->getData('env_file'))) {
+            return $this->dotenv->parse($this->getData('env_file'));
+        }
+        return null;
+    }
+
 }
