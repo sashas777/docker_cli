@@ -87,6 +87,6 @@ class BinMagentoCommand extends Command
      */
     public function isEnabled()
     {
-        return !is_array($this->config->getDotEnvConfig());
+        return is_array($this->config->getDotEnvConfig());
     }
 }
