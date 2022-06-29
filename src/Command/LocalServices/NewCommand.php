@@ -91,50 +91,55 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->input = $input;
+        $this->input  = $input;
         $this->output = $output;
 
         try {
+            if ($lsDir = $this->updateLocalServicesConfig()) {
+                $output->writeln('<info>Updated Local Services configuration from ' . $lsDir . '</info>');
+                return Command::SUCCESS;
+            }
             $lsDir = $this->getLocalServicesDir();
 
             $containers = $this->getContainerList();
             $output->writeln('Generating docker-compose.yml in <info>' . $lsDir . '</info>');
-            $table = new Table($output);
-            $rows = [];
+            $table            = new Table($output);
+            $rows             = [];
             $hostsFileDomains = '';
             foreach ($containers as $container) {
-                $rows[]= [$container['name']];
+                $rows[] = [$container['name']];
                 if (isset($container['domain'])) {
-                    $hostsFileDomains.="127.0.0.1 ".$container['domain']."\r\n";
+                    $hostsFileDomains .= "127.0.0.1 " . $container['domain'] . "\r\n";
                 }
 
             }
             $table->setHeaders(['Service'])->setRows($rows);
             $table->render();
             $question = new ConfirmationQuestion('Continue? <info>(Y/n)</info> ', true);
-            $confirm = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
-            if (!$confirm) {
+            $confirm  = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
+            if ( ! $confirm) {
                 return Command::SUCCESS;
             }
             $this->downloadAndMergeFiles($containers);
 
         } catch (\Exception $e) {
-            $output->writeln('<error>Failed to create the local services: '.$e->getMessage().'</error>');
+            $output->writeln('<error>Failed to create the local services: ' . $e->getMessage() . '</error>');
+
             return Command::FAILURE;
         }
 
-        $output->writeln('<info>Generated Local Services docker-compose files in '.$lsDir. '</info>');
+        $output->writeln('<info>Generated Local Services docker-compose files in ' . $lsDir . '</info>');
         $hostsFile = '/etc/hosts';
         if ($this->config->isWindows()) {
             $hostsFile = 'C:\Windows\System32\Drivers\etc\hosts';
         }
         $output->writeln($hostsFileDomains);
-        $output->writeln('<info>Please, add domains above to your hosts file: </info> (<comment>'.$hostsFile.'</comment>)');
+        $output->writeln('<info>Please, add domains above to your hosts file: </info> (<comment>' . $hostsFile . '</comment>)');
         $output->writeln('<info>Database host: </info><comment>127.0.0.1:3306</comment>');
         if (array_key_exists(static::PORTAINER_KEY, $containers)) {
             $output->writeln('<info>Portainer password: </info><comment>admin</comment>');
         }
-        $output->writeln('To run the local services use the command docker-compose up -d from the directory <info>'.$lsDir.'</info>');
+        $output->writeln('To run the local services use the command docker-compose up -d from the directory <info>' . $lsDir . '</info>');
 
         return Command::SUCCESS;
     }
@@ -150,32 +155,35 @@ EOF
      */
     private function downloadAndMergeFiles(array $containers): void
     {
-        $lsDir = $this->getLocalServicesDir();
+        $lsDir    = $this->getLocalServicesDir();
         $services = '';
         foreach ($containers as $containerKey => $container) {
-            $url = $container['url'];
+            $url         = $container['url'];
             $httpContent = $this->client->getHttpContent($url);
 
-            if ($containerKey==static::TRAEFIK_KEY) {
+            if ($containerKey == static::TRAEFIK_KEY) {
                 $this->createTraefikConfig();
-                $services.=$httpContent;
-            }else  if ($containerKey==static::DB_KEY) {
+                $services .= $httpContent;
+            } elseif ($containerKey == static::DB_KEY) {
                 $this->createDbConfig();
                 $dbRootPass = 'magento2';
-                $question = new Question('MariaDB root password [<comment>'.$dbRootPass.'</comment>]: ', $dbRootPass);
+                $question   = new Question('MariaDB root password [<comment>' . $dbRootPass . '</comment>]: ',
+                    $dbRootPass);
                 $dbRootPass = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
 
-                $dbName = 'magento2';
-                $question = new Question('MariaDB new database name [<comment>'.$dbName.'</comment>]: ', $dbName);
-                $dbName = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
+                $dbName   = 'magento2';
+                $question = new Question('MariaDB new database name [<comment>' . $dbName . '</comment>]: ', $dbName);
+                $dbName   = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
 
                 $dbUsername = 'magento2';
-                $question = new Question('MariaDB new user username [<comment>'.$dbUsername.'</comment>]: ', $dbUsername);
+                $question   = new Question('MariaDB new user username [<comment>' . $dbUsername . '</comment>]: ',
+                    $dbUsername);
                 $dbUsername = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
 
-                $dbPass = 'magento2';
-                $question = new Question('MariaDB '.$dbUsername.' password [<comment>'.$dbPass.'</comment>]: ', $dbPass);
-                $dbPass = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
+                $dbPass   = 'magento2';
+                $question = new Question('MariaDB ' . $dbUsername . ' password [<comment>' . $dbPass . '</comment>]: ',
+                    $dbPass);
+                $dbPass   = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
 
                 $httpContent = sprintf(
                     $httpContent,
@@ -185,15 +193,15 @@ EOF
                     $dbPass
                 );
 
-                $services.=$httpContent;
+                $services .= $httpContent;
             } else {
-                $services.=$httpContent;
+                $services .= $httpContent;
             }
         }
 
-        $httpContent = $this->client->getHttpContent($this->config->getData('local_services_base'));
+        $httpContent   = $this->client->getHttpContent($this->config->getData('local_services_base'));
         $dockerCompose = sprintf($httpContent, $services);
-        file_put_contents($lsDir.DIRECTORY_SEPARATOR.$this->config->getData('compose_file'), $dockerCompose);
+        file_put_contents($lsDir . DS . $this->config->getData('compose_file'), $dockerCompose);
     }
 
     /**
@@ -206,11 +214,11 @@ EOF
     private function createTraefikConfig(): void
     {
         $lsDir = $this->getLocalServicesDir();
-        @mkdir($lsDir.DIRECTORY_SEPARATOR.'traefik');
+        @mkdir($lsDir . DS . 'traefik');
         $httpContent = $this->client->getHttpContent($this->config->getData('traefik_dynamic'));
-        file_put_contents($lsDir.DIRECTORY_SEPARATOR.'traefik'.DIRECTORY_SEPARATOR.'dynamic.yml', $httpContent);
+        file_put_contents($lsDir . DS . 'traefik' . DS . 'dynamic.yml', $httpContent);
         $httpContent = $this->client->getHttpContent($this->config->getData('traefik_app'));
-        file_put_contents($lsDir.DIRECTORY_SEPARATOR.'traefik'.DIRECTORY_SEPARATOR.'traefik.yml', $httpContent);
+        file_put_contents($lsDir . DS . 'traefik' . DS . 'traefik.yml', $httpContent);
     }
 
     /**
@@ -223,9 +231,9 @@ EOF
     private function createDbConfig(): void
     {
         $lsDir = $this->getLocalServicesDir();
-        @mkdir($lsDir.DIRECTORY_SEPARATOR.'mysql');
+        @mkdir($lsDir . DS . 'mysql');
         $httpContent = $this->client->getHttpContent($this->config->getData('mysql_config'));
-        file_put_contents($lsDir.DIRECTORY_SEPARATOR.'mysql'.DIRECTORY_SEPARATOR.'custom-config.cnf', $httpContent);
+        file_put_contents($lsDir . DS . 'mysql' . DS . 'custom-config.cnf', $httpContent);
     }
 
     /**
@@ -235,7 +243,7 @@ EOF
     private function getContainerList(): array
     {
         $containerList = [];
-        $services = $this->config->getData('docker_local_services');
+        $services      = $this->config->getData('docker_local_services');
         foreach ($services as $service => $serviceInfo) {
             $confirm = false;
             if ($serviceInfo['is_required']) {
@@ -243,15 +251,42 @@ EOF
                 continue;
             }
             $question = new ConfirmationQuestion(
-                'Do you want to use <info>'.$serviceInfo['name'].'</info> (y/N) ', $confirm);
-            $confirm = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
+                'Do you want to use <info>' . $serviceInfo['name'] . '</info> (y/N) ', $confirm);
+            $confirm  = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
             if ($confirm) {
                 $containerList[$service] = $serviceInfo;
             }
 
             $containerList[$service] = $serviceInfo;
         }
+
         return $containerList;
+    }
+
+    /**
+     * @return string|null
+     */
+    private function updateLocalServicesConfig(): ?string
+    {
+        if ($this->lsDir) {
+            return $this->lsDir;
+        }
+        $question = new ConfirmationQuestion('Do you have local services installed? <info>(y/N)</info> ', false);
+        $confirm = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
+        if (!$confirm) {
+            return null;
+        }
+        $question = new Question('Existing Local Services directory path [<comment>Example: /home/user/local_services</comment>]: ');
+        $question->setMaxAttempts(3);
+        $question->setValidator(function ($answer) {
+            if (!($answer) || !is_dir($answer) || !is_writable($answer) || !file_exists($answer.DS.'docker-compose.yml')) {
+                throw new \Exception('The was an error to access: '.$answer );
+            }
+            return $answer;
+        });
+        $this->lsDir = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
+        $this->config->saveLocalConfig(Config::LOCAL_SERVICE_CONFIG_KEY, $this->lsDir);
+        return $this->lsDir;
     }
 
     /**
@@ -262,7 +297,8 @@ EOF
         if ($this->lsDir) {
             return $this->lsDir;
         }
-        $newDirectoryPath = $this->config->getHomeDirectory().DIRECTORY_SEPARATOR.static::LOCAL_SERVICES_NEW_DIR;
+
+        $newDirectoryPath = $this->config->getHomeDirectory().DS.static::LOCAL_SERVICES_NEW_DIR;
         $question = new Question('New Local Services directory [<comment>'.$newDirectoryPath.'</comment>]: ', $newDirectoryPath);
         $question->setMaxAttempts(3);
         $question->setNormalizer(function ($value) {
@@ -276,6 +312,7 @@ EOF
         });
 
         $this->lsDir = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
+        $this->config->saveLocalConfig(Config::LOCAL_SERVICE_CONFIG_KEY, $this->lsDir);
 
         return $this->lsDir;
     }
@@ -286,5 +323,14 @@ EOF
     private function getQuestionHelper(): QuestionHelper
     {
         return $this->getHelper('question');
+    }
+
+    /**
+     * Disable when local services already created
+     * @return bool
+     */
+    public function isEnabled()
+    {
+        return !is_array($this->config->getLocalServicesComposeFile());
     }
 }

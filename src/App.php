@@ -33,6 +33,9 @@ class App extends Application
         $commands = $commands instanceof \Traversable ? \iterator_to_array($commands) : $commands;
 
         foreach ($commands as $command) {
+            if ($command instanceof \Symfony\Component\Yaml\Command\LintCommand) {
+                continue;
+            }
             $this->add($command);
         }
 

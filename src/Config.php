@@ -13,6 +13,7 @@ use Dcm\Cli\Service\DataObject;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Encoder\JsonDecode;
 use Dcm\Cli\Service\Dotenv;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class Config
@@ -21,6 +22,15 @@ class Config extends DataObject
 {
     private $homeDir;
     private $env;
+
+    /**
+     * Path to local configuration file
+     */
+    const LOCAL_SERVICE_CONFIG_KEY = 'local_services_path';
+    /**
+     * The name of database container
+     */
+    const DB_CONTAINER_NAME = 'db';
 
     /**
      * @var JsonEncoder
@@ -33,22 +43,31 @@ class Config extends DataObject
     private $dotenv;
 
     /**
+     * @var Yaml
+     */
+    private $yaml;
+
+    /**
      * Configuration relative path
      */
-    const CONFIG_FILE = '/config/config.json';
+    const CONFIG_FILE = DS.'config'.DS.'config.json';
+    const BIN_MAGENTO_FILE = DS.'src'.DS.'bin'.DS.'magento';
 
     /**
      * @param JsonEncoder $serializer
      * @param Dotenv $dotenv
+     * @param Yaml $yaml
      * @param array $data
      */
     public function __construct(
         JsonEncoder $serializer,
-        Dotenv $dotenv, array
-        $data = []
+        Dotenv $dotenv,
+        Yaml $yaml,
+        array $data = []
     ) {
         $this->serializer = $serializer;
         $this->dotenv = $dotenv;
+        $this->yaml = $yaml;
         $config = file_get_contents(CLI_ROOT . static::CONFIG_FILE);
         $data = $this->serializer->decode($config, JsonEncoder::FORMAT, [JsonDecode::ASSOCIATIVE =>true]);
         if (!is_array($data)) {
@@ -69,7 +88,7 @@ class Config extends DataObject
     public function getUserConfigDir($absolute = true)
     {
         $path = $this->getData('user_config_dir');
-        return $absolute ? $this->getHomeDirectory() . DIRECTORY_SEPARATOR . $path : $path;
+        return $absolute ? $this->getHomeDirectory() . DS . $path : $path;
     }
 
     /**
@@ -139,4 +158,87 @@ class Config extends DataObject
         return null;
     }
 
+    /**
+     * @return array|null
+     */
+    public function getDockerComposeFile(): ?array
+    {
+        if (is_readable($this->getData('compose_file'))) {
+            return $this->yaml->parseFile($this->getData('compose_file'));
+        }
+        return null;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isMagento(): bool
+    {
+        if (is_readable(getcwd().static::BIN_MAGENTO_FILE)) {
+            return true;
+        }
+        return false;
+    }
+
+
+    private function getLocalConfigFilePath(): string
+    {
+        return $this->getUserConfigDir(true) . DS. $this->getData('local_config_file');
+    }
+
+    /**
+     * @param string $key
+     * @param string $value
+     *
+     * @return $this
+     */
+    public function saveLocalConfig(string $key, string $value): self
+    {
+        if (!file_exists($this->getLocalConfigFilePath())) {
+            file_put_contents(
+                $this->getLocalConfigFilePath(),
+                $this->serializer->encode([], JsonEncoder::FORMAT, [JsonDecode::ASSOCIATIVE =>true])
+            );
+        }
+        $config = file_get_contents($this->getLocalConfigFilePath());
+        $data = $this->serializer->decode($config, JsonEncoder::FORMAT, [JsonDecode::ASSOCIATIVE =>true]);
+        if (!is_array($data)) {
+            $data = [];
+        }
+        $data[$key] = $value;
+        $jsonConfig = $this->serializer->encode($data, JsonEncoder::FORMAT, [JsonDecode::ASSOCIATIVE =>true]);
+        file_put_contents($this->getLocalConfigFilePath(), $jsonConfig);
+        return $this;
+    }
+
+    /**
+     * @param string $key
+     *
+     * @return string|null
+     */
+    public function getLocalConfig(string $key): ?string
+    {
+        if (!is_readable($this->getLocalConfigFilePath())) {
+            return null;
+        }
+        $config = file_get_contents($this->getLocalConfigFilePath());
+        $data = $this->serializer->decode($config, JsonEncoder::FORMAT, [JsonDecode::ASSOCIATIVE =>true]);
+        if (!is_array($data) || !isset($data[$key])) {
+            return null;
+        }
+        return (string) $data[$key];
+    }
+
+    /**
+     * @return array|null
+     */
+    public function getLocalServicesComposeFile(): ?array
+    {
+        $lsDir = $this->getLocalConfig(Config::LOCAL_SERVICE_CONFIG_KEY);
+        $composeFile = $lsDir.DS.$this->getData('compose_file');
+        if (is_readable($composeFile)) {
+            return $this->yaml->parseFile($composeFile);
+        }
+        return null;
+    }
 }

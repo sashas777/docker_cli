@@ -88,10 +88,10 @@ EOT
 
         try {
             foreach ($requiredFiles as $requiredFile) {
-                if (($contents = file_get_contents(CLI_ROOT . DIRECTORY_SEPARATOR . $requiredFile)) === false) {
+                if (($contents = file_get_contents(CLI_ROOT . DS . $requiredFile)) === false) {
                     throw new \RuntimeException(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $requiredFile));
                 }
-                $this->fs->dumpFile($configDir . DIRECTORY_SEPARATOR . $requiredFile, $contents);
+                $this->fs->dumpFile($configDir . DS . $requiredFile, $contents);
             }
         } catch (\Exception $e) {
             $output->writeln('<error>'.$this->indentAndWrap($e->getMessage()).'</error>');
@@ -153,7 +153,7 @@ EOT
         }
 
         $configDirRelative = $this->config->getUserConfigDir(false);
-        $rcDestination = $configDirRelative . DIRECTORY_SEPARATOR . 'shell-config.rc';
+        $rcDestination = $configDirRelative . DS . 'shell-config.rc';
         $suggestedShellConfig = 'HOME=${HOME:-' . escapeshellarg($this->config->getHomeDirectory()) . '}';
         $suggestedShellConfig .= PHP_EOL . sprintf(
                 'export PATH=%s:"$PATH"',
@@ -287,7 +287,7 @@ EOT
         $arg = $filename;
 
         // Replace the home directory with ~, if not on Windows.
-        if (DIRECTORY_SEPARATOR !== '\\') {
+        if (DS !== '\\') {
             $realpath = realpath($filename);
             $homeDir = $this->config->getHomeDirectory();
             if ($realpath && strpos($realpath, $homeDir) === 0) {
@@ -298,7 +298,7 @@ EOT
         // Ensure the argument isn't a basename ('source' would look it up in
         // the PATH).
         if ($arg === basename($filename)) {
-            $arg = '.' . DIRECTORY_SEPARATOR . $filename;
+            $arg = '.' . DS . $filename;
         }
 
         // Crude argument escaping (escapeshellarg() would prevent tilde
@@ -368,9 +368,9 @@ EOT
         // Pick the first of the candidate files that already exists.
         $homeDir = $this->config->getHomeDirectory();
         foreach ($candidates as $candidate) {
-            if (file_exists($homeDir . DIRECTORY_SEPARATOR . $candidate)) {
-                $this->debug('Found existing config file: ' . $homeDir . DIRECTORY_SEPARATOR . $candidate);
-                return $homeDir . DIRECTORY_SEPARATOR . $candidate;
+            if (file_exists($homeDir . DS . $candidate)) {
+                $this->debug('Found existing config file: ' . $homeDir . DS . $candidate);
+                return $homeDir . DS . $candidate;
             }
         }
 
@@ -384,13 +384,13 @@ EOT
         if ($shellType === 'bash') {
             if ($this->config->isOsX()) {
                 $this->debug('OS X: defaulting to ~/.bash_profile');
-                return $homeDir . DIRECTORY_SEPARATOR . '.bash_profile';
+                return $homeDir . DS . '.bash_profile';
             }
             $this->debug('Defaulting to ~/.bashrc');
-            return $homeDir . DIRECTORY_SEPARATOR . '.bashrc';
+            return $homeDir . DS . '.bashrc';
         } elseif ($shellType === 'zsh') {
             $this->debug('Defaulting to ~/.zshrc');
-            return $homeDir . DIRECTORY_SEPARATOR . '.zshrc';
+            return $homeDir . DS . '.zshrc';
         }
         $this->output->writeln(' <error>The shel config file is not exist and shell type not supported: '.$shellType.'</error>');
         return false;

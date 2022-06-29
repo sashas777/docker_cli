@@ -129,7 +129,7 @@ EOF
             $this->downloadAndMergeFiles($containers);
             $this->downloadGlobalEnv();
             $this->saveEnvConfig($projectDomain, $projectCode);
-            @mkdir($projectDir.DIRECTORY_SEPARATOR.'src', 0777, true);
+            @mkdir($projectDir.DS.'src', 0777, true);
 
         } catch (\Exception $e) {
             $output->writeln('<error>Failed to configure the project: '.$e->getMessage().'</error>');
@@ -170,7 +170,7 @@ EOF
 
         $httpContent = $this->client->getHttpContent($this->config->getData('local_base'));
         $dockerCompose = sprintf($httpContent, $services);
-        file_put_contents($projectDir.DIRECTORY_SEPARATOR.$this->config->getData('compose_file'), $dockerCompose);
+        file_put_contents($projectDir.DS.$this->config->getData('compose_file'), $dockerCompose);
     }
 
     /**
@@ -217,7 +217,7 @@ EOF
             $magentoComposerPassword
         );
 
-        file_put_contents($projectDir.DIRECTORY_SEPARATOR.$this->config->getData('global_env_file'), $globalEnv);
+        file_put_contents($projectDir.DS.$this->config->getData('global_env_file'), $globalEnv);
     }
 
     /**
@@ -234,7 +234,7 @@ COMPOSE_CONVERT_WINDOWS_PATHS=1
 WEBSITE_DOMAIN=$projectDomain
 PROJECT_NAME=$projectCode
 EOF;
-        file_put_contents($projectDir.DIRECTORY_SEPARATOR.$this->config->getData('env_file'), $env);
+        file_put_contents($projectDir.DS.$this->config->getData('env_file'), $env);
     }
 
     /**
@@ -245,7 +245,7 @@ EOF;
      */
     private function checkIsInProjectDir(string $projectDir): void
     {
-        if (is_file($projectDir.DIRECTORY_SEPARATOR.$this->config->getData('env_file'))) {
+        if (is_file($projectDir.DS.$this->config->getData('env_file'))) {
             throw new \Exception('the selected directory has a project '.$projectDir );
         }
     }

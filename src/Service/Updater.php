@@ -138,8 +138,8 @@ class Updater
     protected function backupPhar(): void
     {
         $userConfigDir = $this->config->getUserConfigDir();
-        $this->binDir = $userConfigDir . DIRECTORY_SEPARATOR . 'bin';
-        $pharFile = $this->binDir. DIRECTORY_SEPARATOR . $this->config->getData('executable');
+        $this->binDir = $userConfigDir . DS . 'bin';
+        $pharFile = $this->binDir. DS . $this->config->getData('executable');
         $this->backupFileName = $pharFile.$this->config->getData('update_backup_ext');
         if (!is_writable($this->binDir)) {
             throw new \Exception('The home directory is not writeable: '.$this->binDir);
@@ -168,7 +168,7 @@ class Updater
     {
         $url = sprintf($this->config->getData('release_url'), $version);
         $signatureUrl = sprintf($this->config->getData('signature_url'), $version);
-        $this->pharName = $this->binDir . DIRECTORY_SEPARATOR . $this->config->getData('phar_name');
+        $this->pharName = $this->binDir . DS . $this->config->getData('phar_name');
 
         $contents = $this->client->getHttpContent($url);
         if (!$contents) {
@@ -210,7 +210,7 @@ class Updater
     protected function replacePhar(): void
     {
         $localPharFile = $this->config->getUserConfigDir().
-                         DIRECTORY_SEPARATOR . 'bin'. DIRECTORY_SEPARATOR . $this->config->getData('executable');
+                         DS . 'bin'. DS . $this->config->getData('executable');
         rename($this->pharName, $localPharFile);
     }
 
@@ -232,10 +232,10 @@ class Updater
     public function rollback(): void
     {
         $userConfigDir = $this->config->getUserConfigDir();
-        $this->binDir = $userConfigDir . DIRECTORY_SEPARATOR . 'bin';
-        $backupPharFile = $this->binDir. DIRECTORY_SEPARATOR .
+        $this->binDir = $userConfigDir . DS . 'bin';
+        $backupPharFile = $this->binDir. DS .
                     $this->config->getData('executable').$this->config->getData('update_backup_ext');
-        $localPharFile = $this->binDir. DIRECTORY_SEPARATOR . $this->config->getData('executable');
+        $localPharFile = $this->binDir. DS . $this->config->getData('executable');
         if (!file_exists($backupPharFile)) {
             throw new \Exception(sprintf(
                 'The backup file does not exist: %s.', $backupPharFile

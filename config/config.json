@@ -1,5 +1,5 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.5",
   "name": "Docker Container Manager CLI",
   "packagist_url": "https://repo.packagist.org/p2/thesgroup/docker-container-manager.json",
   "release_url": "https://github.com/sashas777/docker_cli/raw/%s/dist/dcm.phar",
@@ -12,6 +12,7 @@
   "release_signature_relative_path": "/dist/signature.json",
   "box_config_relative_path": "/config/box.json",
   "user_config_dir": ".dcm",
+  "local_config_file": "local.json",
   "update_backup_ext": ".bak",
   "dockerhub_tag_pattern": "https://registry.hub.docker.com/v2/repositories/%s/tags/?page_size=%s",
   "dockerhub_specific_tag_pattern": "https://registry.hub.docker.com/v2/repositories/%s/tags/%s/",
