@@ -7,18 +7,15 @@
 
 declare(strict_types=1);
 
-namespace Dcm\Cli\Command\Magento;
+namespace Dcm\Cli\Command\Project;
 
-use Dcm\Cli\Config;
 use Dcm\Cli\Command\AbstractAliasCommand;
+use Dcm\Cli\Config;
 
-/**
- * Class BinMagentoCommand
- */
-class BinMagentoCommand extends AbstractAliasCommand
+class UpdateCommand extends AbstractAliasCommand
 {
-    protected static $defaultName = 'magento:bin';
-    protected static $defaultDescription = 'Runs bin/magento {option} from the CLI container as the www user. Short version: <info>dcm m:b</info>';
+    protected static $defaultName = 'project:update';
+    protected static $defaultDescription = 'Update docker containers. Short version: <info>dcm p:u</info>. Restart container after this command.';
 
     /**
      * @var Config
@@ -34,7 +31,7 @@ class BinMagentoCommand extends AbstractAliasCommand
         string $name = null
     ) {
         $this->config = $config;
-        $commandInline = 'docker-compose exec -u www cli bin/magento';
+        $commandInline = 'docker-compose pull';
         $command = explode(' ', $commandInline);
         $this->setCommand($command);
         parent::__construct($name);
@@ -46,17 +43,17 @@ class BinMagentoCommand extends AbstractAliasCommand
     protected function configure()
     {
         $this->setHelp(<<<EOF
-Use this command to execute any bin/magento command
+Use this command to pull a new version of docker images for the project. Please restart containers after this command.
 EOF
         );
     }
 
     /**
-     * Disable when no env or bin/magento not exists
+     * Disable when no env file in th efolder
      * @return bool
      */
     public function isEnabled()
     {
-        return is_array($this->config->getDotEnvConfig()) && $this->config->isMagento();
+        return is_array($this->config->getDockerComposeFile());
     }
 }

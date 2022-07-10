@@ -13,12 +13,12 @@ use Dcm\Cli\Config;
 use Dcm\Cli\Command\AbstractAliasCommand;
 
 /**
- * Class BinMagentoCommand
+ * Class CacheCleanCommand
  */
-class BinMagentoCommand extends AbstractAliasCommand
+class CacheCleanCommand extends AbstractAliasCommand
 {
-    protected static $defaultName = 'magento:bin';
-    protected static $defaultDescription = 'Runs bin/magento {option} from the CLI container as the www user. Short version: <info>dcm m:b</info>';
+    protected static $defaultName = 'magento:cc';
+    protected static $defaultDescription = 'Runs bin/magento cache:clear command. Short version: <info>dcm m:cc</info>';
 
     /**
      * @var Config
@@ -34,7 +34,7 @@ class BinMagentoCommand extends AbstractAliasCommand
         string $name = null
     ) {
         $this->config = $config;
-        $commandInline = 'docker-compose exec -u www cli bin/magento';
+        $commandInline = 'docker-compose exec -u www cli bin/magento cache:cl';
         $command = explode(' ', $commandInline);
         $this->setCommand($command);
         parent::__construct($name);
@@ -46,7 +46,7 @@ class BinMagentoCommand extends AbstractAliasCommand
     protected function configure()
     {
         $this->setHelp(<<<EOF
-Use this command to execute any bin/magento command
+Use this command to execute bin/magento cache:clear
 EOF
         );
     }

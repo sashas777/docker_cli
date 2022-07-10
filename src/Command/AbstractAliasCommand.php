@@ -73,6 +73,7 @@ abstract class AbstractAliasCommand extends Command
             $startTime = microtime(true);
             $output->writeln('');
             $process = new Process($command);
+            $process->setTimeout(10*60);
             $process->setTty(true);
             $process->mustRun();
             $resultTime = microtime(true) - $startTime;

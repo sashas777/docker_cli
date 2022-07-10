@@ -12,10 +12,16 @@ After the installation, you can use the CLI by the command alias: `dcm`
 ## Commands
 ```
  magento
-  magento:bin         Run bin/magento {option} from the CLI container as the www user. Short version: dcm m:b
+  magento:bin         Runs bin/magento {option} from the CLI container as the www user. Short version: dcm m:b
+  magento:cc          Runs bin/magento cache:clear command. Short version: dcm m:cc
+  magento:su          Runs bin/magento setup:upgrade command. Short version: dcm m:su
  project
   project:info        Project information for each service
   project:new         Create a new docker local instance project
+  project:restart     Restart docker containers. Short version: dcm p:r
+  project:start       Start docker containers. Short version: dcm p:sta
+  project:stop        Stop docker containers. Short version: dcm p:sto
+  project:update      Update docker containers. Short version: dcm p:u. Restart container after this command.
  self
   self:build          Build a new package of the Docker Container Manager CLI
   self:install        [self-install] Install or update CLI configuration files
