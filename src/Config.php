@@ -52,6 +52,7 @@ class Config extends DataObject
      */
     const CONFIG_FILE = DS.'config'.DS.'config.json';
     const BIN_MAGENTO_FILE = DS.'src'.DS.'bin'.DS.'magento';
+    const COMPOSER_FILE = DS.'src'.DS.'composer.json';
 
     /**
      * @param JsonEncoder $serializer
@@ -180,6 +181,16 @@ class Config extends DataObject
         return false;
     }
 
+    /**
+     * @return bool
+     */
+    public function isComposer(): bool
+    {
+        if (is_readable(getcwd().static::COMPOSER_FILE)) {
+            return true;
+        }
+        return false;
+    }
 
     private function getLocalConfigFilePath(): string
     {

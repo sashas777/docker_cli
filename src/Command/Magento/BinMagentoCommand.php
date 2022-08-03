@@ -18,7 +18,7 @@ use Dcm\Cli\Command\AbstractAliasCommand;
 class BinMagentoCommand extends AbstractAliasCommand
 {
     protected static $defaultName = 'magento:bin';
-    protected static $defaultDescription = 'Runs bin/magento {option} from the CLI container as the www user. Short version: <info>dcm m:b</info>';
+    protected static $defaultDescription = 'Execute bin/magento {option} from the CLI container as the www user. Alias: <info>dcm m:b</info>';
 
     /**
      * @var Config

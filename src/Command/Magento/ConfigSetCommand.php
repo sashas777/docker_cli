@@ -13,12 +13,12 @@ use Dcm\Cli\Config;
 use Dcm\Cli\Command\AbstractAliasCommand;
 
 /**
- * Class CacheCleanCommand
+ * Class ConfigSetCommand
  */
-class CacheCleanCommand extends AbstractAliasCommand
+class ConfigSetCommand extends AbstractAliasCommand
 {
-    protected static $defaultName = 'magento:cc';
-    protected static $defaultDescription = 'bin/magento cache:clear command. Alias: <info>dcm m:cc</info>';
+    protected static $defaultName = 'magento:c:set';
+    protected static $defaultDescription = 'bin/magento config:sensitive:set. Alias: <info>dcm m:c:set  [--scope="..."] [--scope-code="..."] path value</info>';
 
     /**
      * @var Config
@@ -34,7 +34,7 @@ class CacheCleanCommand extends AbstractAliasCommand
         string $name = null
     ) {
         $this->config = $config;
-        $commandInline = 'docker-compose exec -u www cli bin/magento cache:cl';
+        $commandInline = 'docker-compose exec -u www cli bin/magento config:sensitive:set';
         $command = explode(' ', $commandInline);
         $this->setCommand($command);
         parent::__construct($name);
@@ -46,7 +46,13 @@ class CacheCleanCommand extends AbstractAliasCommand
     protected function configure()
     {
         $this->setHelp(<<<EOF
-Use this command to execute bin/magento cache:clear
+Use this command to execute bin/magento config:sensitive:set [--scope="..."] [--scope-code="..."] path value
+<info>--scope</info> 	The scope of the configuration. The possible values are default, website, or store. The default is default.
+<info>--scope-code</info> 	The scope code of configuration (website code or store view code)
+<info>-le</info> 	        Locks the value / changes it at the app/etc/env.php file.
+<info>-lc</info> 	        Locks the value / changes it at the app/etc/config.php file. The -lc option overwrites -le if you specify both options.
+<info>path</info>        	Required. The configuration path
+<info>value</info>      	Required. The value of the configuration
 EOF
         );
     }

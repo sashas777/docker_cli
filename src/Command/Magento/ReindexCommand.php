@@ -13,12 +13,12 @@ use Dcm\Cli\Config;
 use Dcm\Cli\Command\AbstractAliasCommand;
 
 /**
- * Class CacheCleanCommand
+ * Class ReindexCommand
  */
-class CacheCleanCommand extends AbstractAliasCommand
+class ReindexCommand extends AbstractAliasCommand
 {
-    protected static $defaultName = 'magento:cc';
-    protected static $defaultDescription = 'bin/magento cache:clear command. Alias: <info>dcm m:cc</info>';
+    protected static $defaultName = 'magento:reindex';
+    protected static $defaultDescription = 'bin/magento indexer:reindex command. Alias: <info>dcm m:re</info>';
 
     /**
      * @var Config
@@ -34,7 +34,7 @@ class CacheCleanCommand extends AbstractAliasCommand
         string $name = null
     ) {
         $this->config = $config;
-        $commandInline = 'docker-compose exec -u www cli bin/magento cache:cl';
+        $commandInline = 'docker-compose exec -u www cli bin/magento indexer:reindex';
         $command = explode(' ', $commandInline);
         $this->setCommand($command);
         parent::__construct($name);
@@ -46,7 +46,7 @@ class CacheCleanCommand extends AbstractAliasCommand
     protected function configure()
     {
         $this->setHelp(<<<EOF
-Use this command to execute bin/magento cache:clear
+Use this command to execute bin/magento indexer:reindex
 EOF
         );
     }

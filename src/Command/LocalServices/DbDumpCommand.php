@@ -96,7 +96,8 @@ EOF
             $process = Process::fromShellCommandline($command);
             $process->mustRun();
             $resultTime = microtime(true) - $startTime;
-            $output->writeln(sprintf('Completed. Execution time: <info>%s sec</info>', gmdate('H:i:s', (int) $resultTime)));
+            $output->writeln(sprintf('Completed. Backup: <info>%s</info>.', getcwd().'/'.$filename));
+            $output->writeln(sprintf('Execution time: <info>%s sec</info>', gmdate('H:i:s', (int) $resultTime)));
         } catch (ProcessFailedException $e) {
             if ($output->isVerbose()) {
                 $output->writeln($e->getMessage());

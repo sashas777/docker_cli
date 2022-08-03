@@ -13,12 +13,12 @@ use Dcm\Cli\Config;
 use Dcm\Cli\Command\AbstractAliasCommand;
 
 /**
- * Class CacheCleanCommand
+ * Class ConfigShowCommand
  */
-class CacheCleanCommand extends AbstractAliasCommand
+class ConfigShowCommand extends AbstractAliasCommand
 {
-    protected static $defaultName = 'magento:cc';
-    protected static $defaultDescription = 'bin/magento cache:clear command. Alias: <info>dcm m:cc</info>';
+    protected static $defaultName = 'magento:c:show';
+    protected static $defaultDescription = 'bin/magento config:show. Alias: <info>dcm m:c:show</info>';
 
     /**
      * @var Config
@@ -34,7 +34,7 @@ class CacheCleanCommand extends AbstractAliasCommand
         string $name = null
     ) {
         $this->config = $config;
-        $commandInline = 'docker-compose exec -u www cli bin/magento cache:cl';
+        $commandInline = 'docker-compose exec -u www cli bin/magento config:show';
         $command = explode(' ', $commandInline);
         $this->setCommand($command);
         parent::__construct($name);
@@ -46,7 +46,7 @@ class CacheCleanCommand extends AbstractAliasCommand
     protected function configure()
     {
         $this->setHelp(<<<EOF
-Use this command to execute bin/magento cache:clear
+Use this command to execute bin/magento config:show
 EOF
         );
     }

@@ -7,18 +7,15 @@
 
 declare(strict_types=1);
 
-namespace Dcm\Cli\Command\Magento;
+namespace Dcm\Cli\Command\Project;
 
-use Dcm\Cli\Config;
 use Dcm\Cli\Command\AbstractAliasCommand;
+use Dcm\Cli\Config;
 
-/**
- * Class CacheCleanCommand
- */
-class CacheCleanCommand extends AbstractAliasCommand
+class StatusCommand extends AbstractAliasCommand
 {
-    protected static $defaultName = 'magento:cc';
-    protected static $defaultDescription = 'bin/magento cache:clear command. Alias: <info>dcm m:cc</info>';
+    protected static $defaultName = 'project:status';
+    protected static $defaultDescription = 'Lists status of containers.';
 
     /**
      * @var Config
@@ -34,7 +31,7 @@ class CacheCleanCommand extends AbstractAliasCommand
         string $name = null
     ) {
         $this->config = $config;
-        $commandInline = 'docker-compose exec -u www cli bin/magento cache:cl';
+        $commandInline = 'docker-compose ps';
         $command = explode(' ', $commandInline);
         $this->setCommand($command);
         parent::__construct($name);
@@ -46,17 +43,17 @@ class CacheCleanCommand extends AbstractAliasCommand
     protected function configure()
     {
         $this->setHelp(<<<EOF
-Use this command to execute bin/magento cache:clear
+Use this command to list status docker containers for the project.
 EOF
         );
     }
 
     /**
-     * Disable when no env or bin/magento not exists
+     * Disable when no env file in th efolder
      * @return bool
      */
     public function isEnabled()
     {
-        return is_array($this->config->getDotEnvConfig()) && $this->config->isMagento();
+        return is_array($this->config->getDockerComposeFile());
     }
 }

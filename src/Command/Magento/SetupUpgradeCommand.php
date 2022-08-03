@@ -18,7 +18,7 @@ use Dcm\Cli\Command\AbstractAliasCommand;
 class SetupUpgradeCommand extends AbstractAliasCommand
 {
     protected static $defaultName = 'magento:su';
-    protected static $defaultDescription = 'Runs bin/magento setup:upgrade command. Short version: <info>dcm m:su</info>';
+    protected static $defaultDescription = 'bin/magento setup:upgrade. Alias: <info>dcm m:su</info>';
 
     /**
      * @var Config
