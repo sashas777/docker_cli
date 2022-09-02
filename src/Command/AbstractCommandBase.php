@@ -83,9 +83,21 @@ abstract class AbstractCommandBase extends Command
         } catch (\Exception $e) {
             return;
         }
+
+        if (version_compare($currentVersion, $newVersion, '>=')) {
+            return;
+        }
+
         /** @var \Symfony\Component\Console\Helper\QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
-        $question = new ConfirmationQuestion(sprintf('There is a new version <info>%s</info> update? <comment>(Y/n)</comment> ', $newVersion), true);
+        $question = new ConfirmationQuestion(
+            sprintf(
+                'New version available <info>%s</info> update? (current <info>%s</info>) <comment>(Y/n)</comment> ',
+                $newVersion,
+                $currentVersion
+            ),
+            true
+        );
         if (!$questionHelper->ask($input, $output, $question)) {
             return;
         }
