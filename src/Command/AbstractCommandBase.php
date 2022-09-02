@@ -109,10 +109,11 @@ abstract class AbstractCommandBase extends Command
         }
 
         $output->writeln(sprintf(
-            'Successfully updated to the version <info>%s</info>',
+            'Successfully updated to the version <info>%s</info>. Please re-run the command.',
             $newVersion
         ));
 
         $this->config->saveLocalConfig('update_last_checked', (string) $timestamp);
+        exit(0);
     }
 }
