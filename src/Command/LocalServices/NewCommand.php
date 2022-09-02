@@ -11,6 +11,7 @@ namespace Dcm\Cli\Command\LocalServices;
 
 use Dcm\Cli\Config;
 use Dcm\Cli\Service\HttpRequest;
+use Dcm\Cli\Service\Updater;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Helper\Table;
@@ -18,11 +19,12 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Question\Question;
+use Dcm\Cli\Command\AbstractCommandBase;
 
 /**
  * Class to generate local services
  */
-class NewCommand extends Command
+class NewCommand extends AbstractCommandBase
 {
     protected static $defaultName = 'services:new';
     protected static $defaultDescription = 'Generate docker-compose.yml file for local services';
@@ -36,10 +38,6 @@ class NewCommand extends Command
      * @var
      */
     private $lsDir;
-    /**
-     * @var Config
-     */
-    private $config;
 
     /**
      * @var HttpRequest
@@ -57,18 +55,17 @@ class NewCommand extends Command
     private $output;
 
     /**
-     * @param Config $config
+     * @param Updater $updater
      * @param HttpRequest $client
      * @param string|null $name
      */
     public function __construct(
-        Config $config,
+        Updater $updater,
         HttpRequest $client,
         string $name = null
     ) {
-        $this->config = $config;
         $this->client = $client;
-        parent::__construct($name);
+        parent::__construct($updater, $name);
     }
 
     /**

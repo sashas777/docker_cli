@@ -10,31 +10,28 @@ declare(strict_types=1);
 namespace Dcm\Cli\Command\Project;
 
 use Dcm\Cli\Command\AbstractAliasCommand;
-use Dcm\Cli\Config;
+use Dcm\Cli\Service\Updater;
 
+/**
+ * Class StatusCommand
+ */
 class StatusCommand extends AbstractAliasCommand
 {
     protected static $defaultName = 'project:status';
     protected static $defaultDescription = 'Lists status of containers.';
 
     /**
-     * @var Config
-     */
-    private $config;
-
-    /**
-     * @param Config $config
+     * @param Updater $updater
      * @param string|null $name
      */
     public function __construct(
-        Config $config,
+        Updater $updater,
         string $name = null
     ) {
-        $this->config = $config;
         $commandInline = 'docker-compose ps';
         $command = explode(' ', $commandInline);
         $this->setCommand($command);
-        parent::__construct($name);
+        parent::__construct($updater, $name);
     }
 
     /**

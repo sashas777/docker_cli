@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace Dcm\Cli\Command\Project;
 
 use Dcm\Cli\Command\AbstractAliasCommand;
-use Dcm\Cli\Config;
+use Dcm\Cli\Service\Updater;
 
 /**
  * Class OwnerCommand
@@ -21,23 +21,17 @@ class OwnerCommand extends AbstractAliasCommand
     protected static $defaultDescription = 'Reset project file ownership to www user.';
 
     /**
-     * @var Config
-     */
-    private $config;
-
-    /**
-     * @param Config $config
+     * @param Updater $updater
      * @param string|null $name
      */
     public function __construct(
-        Config $config,
+        Updater $updater,
         string $name = null
     ) {
-        $this->config = $config;
         $commandInline = 'docker-compose exec chown www:www -R  /var/www/';
         $command = explode(' ', $commandInline);
         $this->setCommand($command);
-        parent::__construct($name);
+        parent::__construct($updater, $name);
     }
 
     /**

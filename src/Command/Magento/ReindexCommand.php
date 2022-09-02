@@ -9,8 +9,8 @@ declare(strict_types=1);
 
 namespace Dcm\Cli\Command\Magento;
 
-use Dcm\Cli\Config;
 use Dcm\Cli\Command\AbstractAliasCommand;
+use Dcm\Cli\Service\Updater;
 
 /**
  * Class ReindexCommand
@@ -21,23 +21,17 @@ class ReindexCommand extends AbstractAliasCommand
     protected static $defaultDescription = 'bin/magento indexer:reindex command. Alias: <info>dcm m:re</info>';
 
     /**
-     * @var Config
-     */
-    private $config;
-
-    /**
-     * @param Config $config
+     * @param Updater $updater
      * @param string|null $name
      */
     public function __construct(
-        Config $config,
+        Updater $updater,
         string $name = null
     ) {
-        $this->config = $config;
         $commandInline = 'docker-compose exec -u www cli bin/magento indexer:reindex';
         $command = explode(' ', $commandInline);
         $this->setCommand($command);
-        parent::__construct($name);
+        parent::__construct($updater, $name);
     }
 
     /**

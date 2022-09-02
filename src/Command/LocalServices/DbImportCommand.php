@@ -18,19 +18,15 @@ use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Console\Input\InputArgument;
+use Dcm\Cli\Command\AbstractCommandBase;
 
 /**
  * Class DbImportCommand
  */
-class DbImportCommand extends Command
+class DbImportCommand extends AbstractCommandBase
 {
     protected static $defaultName = 'services:db:import';
     protected static $defaultDescription = 'Import database from a dump';
-
-    /**
-     * @var Config
-     */
-    private $config;
 
     /**
      * @var InputInterface
@@ -60,18 +56,6 @@ class DbImportCommand extends Command
     const CREATE_NEW_DB = 'Create a new database';
     const FILE_EXTENSIONS = ['sql', 'gz'];
     const FILE_EXTENSION_GZIP = 'gz';
-
-    /**
-     * @param Config $config
-     * @param string|null $name
-     */
-    public function __construct(
-        Config $config,
-        string $name = null
-    ) {
-        $this->config = $config;
-        parent::__construct($name);
-    }
 
     /**
      * {@inheritdoc}

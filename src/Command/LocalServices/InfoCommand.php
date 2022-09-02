@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace Dcm\Cli\Command\LocalServices;
 
-use Dcm\Cli\Config;
 use Dcm\Cli\Service\Updater;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
@@ -26,15 +25,14 @@ class InfoCommand extends AbstractCommandBase
     protected static $defaultDescription = 'Local services information for each service';
 
     /**
-     * @param Config $config
+     * @param Updater $updater
      * @param string|null $name
      */
     public function __construct(
         Updater $updater,
-        Config $config,
         string $name = null
     ) {
-        parent::__construct($updater, $config, $name);
+        parent::__construct($updater, $name);
     }
 
     /**

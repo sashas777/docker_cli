@@ -16,6 +16,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 
+/**
+ * Class AbstractCommandBase
+ */
 abstract class AbstractCommandBase extends Command
 {
     /** @var bool */
@@ -31,13 +34,16 @@ abstract class AbstractCommandBase extends Command
      */
     protected $config;
 
+    /**
+     * @param Updater $updater
+     * @param string|null $name
+     */
     public function __construct(
         Updater $updater,
-        Config $config,
         string $name = null
     ) {
         $this->updater = $updater;
-        $this->config = $config;
+        $this->config = $updater->getConfig();
         parent::__construct($name);
     }
     /**

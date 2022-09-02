@@ -19,7 +19,7 @@ use Symfony\Component\Process\Process;
 /**
  * Class AbstractAliasCommand
  */
-abstract class AbstractAliasCommand extends Command
+abstract class AbstractAliasCommand extends AbstractCommandBase
 {
     /**
      * @var array

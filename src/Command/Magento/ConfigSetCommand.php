@@ -9,8 +9,8 @@ declare(strict_types=1);
 
 namespace Dcm\Cli\Command\Magento;
 
-use Dcm\Cli\Config;
 use Dcm\Cli\Command\AbstractAliasCommand;
+use Dcm\Cli\Service\Updater;
 
 /**
  * Class ConfigSetCommand
@@ -21,23 +21,17 @@ class ConfigSetCommand extends AbstractAliasCommand
     protected static $defaultDescription = 'bin/magento config:sensitive:set. Alias: <info>dcm m:c:set  [--scope="..."] [--scope-code="..."] path value</info>';
 
     /**
-     * @var Config
-     */
-    private $config;
-
-    /**
-     * @param Config $config
+     * @param Updater $updater
      * @param string|null $name
      */
     public function __construct(
-        Config $config,
+        Updater $updater,
         string $name = null
     ) {
-        $this->config = $config;
         $commandInline = 'docker-compose exec -u www cli bin/magento config:sensitive:set';
         $command = explode(' ', $commandInline);
         $this->setCommand($command);
-        parent::__construct($name);
+        parent::__construct($updater, $name);
     }
 
     /**

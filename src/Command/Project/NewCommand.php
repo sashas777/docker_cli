@@ -9,8 +9,8 @@ declare(strict_types=1);
 
 namespace Dcm\Cli\Command\Project;
 
-use Dcm\Cli\Config;
 use Dcm\Cli\Service\HttpRequest;
+use Dcm\Cli\Service\Updater;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -21,11 +21,12 @@ use Symfony\Component\Serializer\Encoder\JsonDecode;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Helper\Table;
+use Dcm\Cli\Command\AbstractCommandBase;
 
 /**
  * Class NewCommand
  */
-class NewCommand extends Command
+class NewCommand extends AbstractCommandBase
 {
     protected static $defaultName = 'project:new';
     protected static $defaultDescription = 'Create a new docker local instance project';
@@ -49,11 +50,6 @@ class NewCommand extends Command
     private $projectDir;
 
     /**
-     * @var Config
-     */
-    private $config;
-
-    /**
      * @var JsonEncoder
      */
     private $serializer;
@@ -64,21 +60,20 @@ class NewCommand extends Command
     private $client;
 
     /**
-     * @param Config $config
+     * @param Updater $updater
      * @param JsonEncoder $serializer
      * @param HttpRequest $client
      * @param string|null $name
      */
     public function __construct(
-        Config $config,
+        Updater $updater,
         JsonEncoder $serializer,
         HttpRequest $client,
         string $name = null
     ) {
-        $this->config = $config;
         $this->serializer = $serializer;
         $this->client = $client;
-        parent::__construct($name);
+        parent::__construct($updater, $name);
     }
 
     /**

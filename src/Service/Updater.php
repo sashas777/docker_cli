@@ -243,4 +243,12 @@ class Updater
         }
         rename($backupPharFile, $localPharFile);
     }
+
+    /**
+     * @return Config
+     */
+    public function getConfig(): Config
+    {
+        return $this->config;
+    }
 }

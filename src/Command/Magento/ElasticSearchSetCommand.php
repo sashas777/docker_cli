@@ -9,8 +9,8 @@ declare(strict_types=1);
 
 namespace Dcm\Cli\Command\Magento;
 
-use Dcm\Cli\Config;
 use Dcm\Cli\Command\AbstractAliasCommand;
+use Dcm\Cli\Service\Updater;
 
 /**
  * Class ElasticSearchSetCommand
@@ -22,19 +22,15 @@ class ElasticSearchSetCommand extends AbstractAliasCommand
     protected static $defaultName = 'magento:c:elastic';
 
     /**
-     * @var Config
-     */
-    private $config;
-
-    /**
-     * @param Config $config
+     * @param Updater $updater
      * @param string|null $name
      */
     public function __construct(
-        Config $config,
+        Updater $updater,
         string $name = null
     ) {
-        $this->config = $config;
+        parent::__construct($updater, $name);
+
         $esHost = null;
 
         if (!$this->isEnabled()) {
@@ -51,14 +47,12 @@ class ElasticSearchSetCommand extends AbstractAliasCommand
                     }
                 }
             }
-
         }
         $this->setDescription('Set catalog/search/elasticsearch7_server_hostname: <info>'. $esHost.'</info>');
 
         $commandInline = 'docker-compose exec -u www cli bin/magento config:set catalog/search/elasticsearch7_server_hostname '.$esHost;
         $command = explode(' ', $commandInline);
         $this->setCommand($command);
-        parent::__construct($name);
     }
 
     /**

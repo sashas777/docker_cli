@@ -10,31 +10,28 @@ declare(strict_types=1);
 namespace Dcm\Cli\Command\Project;
 
 use Dcm\Cli\Command\AbstractAliasCommand;
-use Dcm\Cli\Config;
+use Dcm\Cli\Service\Updater;
 
+/**
+ * Class UpdateCommand
+ */
 class UpdateCommand extends AbstractAliasCommand
 {
     protected static $defaultName = 'project:update';
     protected static $defaultDescription = 'Update docker containers. Short version: <info>dcm p:u</info>. Restart container after this command.';
 
     /**
-     * @var Config
-     */
-    private $config;
-
-    /**
-     * @param Config $config
+     * @param Updater $updater
      * @param string|null $name
      */
     public function __construct(
-        Config $config,
+        Updater $updater,
         string $name = null
     ) {
-        $this->config = $config;
         $commandInline = 'docker-compose pull';
         $command = explode(' ', $commandInline);
         $this->setCommand($command);
-        parent::__construct($name);
+        parent::__construct($updater, $name);
     }
 
     /**

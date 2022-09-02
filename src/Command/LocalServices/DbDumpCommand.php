@@ -16,19 +16,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
+use Dcm\Cli\Command\AbstractCommandBase;
 
 /**
  * Class DbDumpCommand
  */
-class DbDumpCommand extends Command
+class DbDumpCommand extends AbstractCommandBase
 {
     protected static $defaultName = 'services:db:dump';
     protected static $defaultDescription = 'Create a database dump file';
-
-    /**
-     * @var Config
-     */
-    private $config;
 
     /**
      * @var InputInterface
@@ -49,18 +45,6 @@ class DbDumpCommand extends Command
      * @var
      */
     private $password;
-
-    /**
-     * @param Config $config
-     * @param string|null $name
-     */
-    public function __construct(
-        Config $config,
-        string $name = null
-    ) {
-        $this->config = $config;
-        parent::__construct($name);
-    }
 
     /**
      * {@inheritdoc}
