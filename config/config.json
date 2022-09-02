@@ -1,5 +1,5 @@
 {
-  "version": "1.0.9",
+  "version": "1.0.10",
   "name": "Docker Container Manager CLI",
   "packagist_url": "https://repo.packagist.org/p2/thesgroup/docker-container-manager.json",
   "release_url": "https://github.com/sashas777/docker_cli/raw/%s/dist/dcm.phar",
@@ -14,6 +14,7 @@
   "user_config_dir": ".dcm",
   "local_config_file": "local.json",
   "update_backup_ext": ".bak",
+  "update_check_interval": "86400",
   "dockerhub_tag_pattern": "https://registry.hub.docker.com/v2/repositories/%s/tags/?page_size=%s",
   "dockerhub_specific_tag_pattern": "https://registry.hub.docker.com/v2/repositories/%s/tags/%s/",
   "local_base": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Environment/parts/base.yml",

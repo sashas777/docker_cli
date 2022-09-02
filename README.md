@@ -41,3 +41,8 @@ After the installation, you can use the CLI by the command alias: `dcm`
   services:db:import   Import database from a dump
   services:info        Local services information for each service
 ```
+
+## New Release Instructions
+- config.json
+- compile
+- git tag

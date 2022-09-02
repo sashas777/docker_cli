@@ -10,34 +10,31 @@ declare(strict_types=1);
 namespace Dcm\Cli\Command\LocalServices;
 
 use Dcm\Cli\Config;
+use Dcm\Cli\Service\Updater;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Dcm\Cli\Command\AbstractCommandBase;
 
 /**
  * Class InfoCommand
  */
-class InfoCommand extends Command
+class InfoCommand extends AbstractCommandBase
 {
     protected static $defaultName = 'services:info';
     protected static $defaultDescription = 'Local services information for each service';
-
-    /**
-     * @var Config
-     */
-    private $config;
 
     /**
      * @param Config $config
      * @param string|null $name
      */
     public function __construct(
+        Updater $updater,
         Config $config,
         string $name = null
     ) {
-        $this->config = $config;
-        parent::__construct($name);
+        parent::__construct($updater, $config, $name);
     }
 
     /**
@@ -90,6 +87,11 @@ EOF
     private function parseEnvVar(string $input): string
     {
         $envConfig = $this->config->getDotEnvConfig();
+
+        if ($envConfig === null) {
+            return $input;
+        }
+
         foreach ($envConfig as $key=>$value) {
             $input = str_replace('${'.$key.'}', $value, $input);
         }

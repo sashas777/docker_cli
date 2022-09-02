@@ -37,7 +37,12 @@ class ElasticSearchSetCommand extends AbstractAliasCommand
         $this->config = $config;
         $esHost = null;
 
+        if (!$this->isEnabled()) {
+            return;
+        }
+
         $composeConfig = $this->config->getDockerComposeFile();
+
         foreach ($composeConfig['services'] as $serviceName => $serviceInfo) {
             if ($serviceName == static::ELASTICSEARCH_SERVICE_NAME) {
                 foreach ($serviceInfo as $property => $value) {

@@ -113,18 +113,18 @@ class UpdateCommand extends Command
         }
         $output->writeln(sprintf('Updating to version %s', $newVersion));
 
-        $output->writeln(sprintf(
-            'The %s has been successfully updated to version <info>%s</info>',
-            $applicationName,
-            $newVersion
-        ));
-
         try {
             $this->updater->update($newVersion);
         } catch (\Exception $e) {
             $output->writeln('<error>Failed to update: ' . $e->getMessage().'</error>');
             return Command::FAILURE;
         }
+
+        $output->writeln(sprintf(
+            'The %s has been successfully updated to the version <info>%s</info>',
+            $applicationName,
+            $newVersion
+        ));
 
         return Command::SUCCESS;
     }
