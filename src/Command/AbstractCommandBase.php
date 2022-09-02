@@ -109,7 +109,7 @@ abstract class AbstractCommandBase extends Command
         }
 
         $output->writeln(sprintf(
-            'Successfully updated to the version <info>%s</info>. Please re-run the command.',
+            'Successfully updated to the version <info>%s</info>. Re-run the command, please.',
             $newVersion
         ));
 
