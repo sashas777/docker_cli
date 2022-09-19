@@ -12,6 +12,9 @@ namespace Dcm\Cli\Service;
 use Dcm\Cli\Config;
 use Symfony\Component\Serializer\Encoder\JsonDecode;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Dcm\Cli\Service\Validation\Docker;
+use Dcm\Cli\Service\Validation\Magento;
+use Dcm\Cli\Service\Validation\Composer;
 
 /**
  * Class Updater
@@ -52,18 +55,42 @@ class Updater
     private $serializer;
 
     /**
+     * @var Docker
+     */
+    private $dockerValidation;
+
+    /**
+     * @var Magento
+     */
+    private $magentoValidation;
+
+    /**
+     * @var Composer
+     */
+    private $composerValidation;
+
+    /**
      * @param Config $config
      * @param HttpRequest $client
      * @param JsonEncoder $serializer
+     * @param Docker $dockerValidation
+     * @param Magento $magentoValidation
+     * @param Composer $composerValidation
      */
     public function __construct(
         Config $config,
         HttpRequest $client,
-        JsonEncoder $serializer
+        JsonEncoder $serializer,
+        Docker $dockerValidation,
+        Magento $magentoValidation,
+        Composer $composerValidation
     ) {
         $this->config = $config;
         $this->client = $client;
         $this->serializer = $serializer;
+        $this->dockerValidation = $dockerValidation;
+        $this->magentoValidation = $magentoValidation;
+        $this->composerValidation = $composerValidation;
     }
 
     /**
@@ -250,5 +277,29 @@ class Updater
     public function getConfig(): Config
     {
         return $this->config;
+    }
+
+    /**
+     * @return Docker
+     */
+    public function getDockerValidation(): Docker
+    {
+        return $this->dockerValidation;
+    }
+
+    /**
+     * @return Magento
+     */
+    public function getMagentoValidation(): Magento
+    {
+        return $this->magentoValidation;
+    }
+
+    /**
+     * @return Composer
+     */
+    public function getComposerValidation(): Composer
+    {
+        return $this->composerValidation;
     }
 }

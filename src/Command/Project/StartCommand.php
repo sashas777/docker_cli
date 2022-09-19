@@ -18,7 +18,7 @@ use Dcm\Cli\Service\Updater;
 class StartCommand extends AbstractAliasCommand
 {
     protected static $defaultName = 'project:start';
-    protected static $defaultDescription = 'Start docker containers. Short version: <info>dcm p:sta</info>';
+    protected static $defaultDescription = 'Start docker containers. Short version: <info>dcm p:star</info>';
 
     /**
      * @param Updater $updater

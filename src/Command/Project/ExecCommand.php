@@ -52,6 +52,6 @@ EOF
      */
     public function isEnabled()
     {
-        return is_array($this->config->getDockerComposeFile());
+        return $this->updater->getDockerValidation()->isCliRunning();
     }
 }

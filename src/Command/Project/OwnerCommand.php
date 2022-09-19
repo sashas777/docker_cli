@@ -28,7 +28,7 @@ class OwnerCommand extends AbstractAliasCommand
         Updater $updater,
         string $name = null
     ) {
-        $commandInline = 'docker-compose exec chown www:www -R  /var/www/';
+        $commandInline = 'docker-compose exec cli chown www:www -R  /var/www/';
         $command = explode(' ', $commandInline);
         $this->setCommand($command);
         parent::__construct($updater, $name);
@@ -51,6 +51,6 @@ EOF
      */
     public function isEnabled()
     {
-        return is_array($this->config->getDockerComposeFile());
+        return $this->updater->getDockerValidation()->isCliRunning();
     }
 }

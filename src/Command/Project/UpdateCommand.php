@@ -46,7 +46,8 @@ EOF
     }
 
     /**
-     * Disable when no env file in th efolder
+     * Disable when no env file in the folder
+     * check if env disabled and then update
      * @return bool
      */
     public function isEnabled()

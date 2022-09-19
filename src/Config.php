@@ -51,8 +51,6 @@ class Config extends DataObject
      * Configuration relative path
      */
     const CONFIG_FILE = DS.'config'.DS.'config.json';
-    const BIN_MAGENTO_FILE = DS.'src'.DS.'bin'.DS.'magento';
-    const COMPOSER_FILE = DS.'src'.DS.'composer.json';
 
     /**
      * @param JsonEncoder $serializer
@@ -168,28 +166,6 @@ class Config extends DataObject
             return $this->yaml->parseFile($this->getData('compose_file'));
         }
         return null;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isMagento(): bool
-    {
-        if (is_readable(getcwd().static::BIN_MAGENTO_FILE)) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isComposer(): bool
-    {
-        if (is_readable(getcwd().static::COMPOSER_FILE)) {
-            return true;
-        }
-        return false;
     }
 
     private function getLocalConfigFilePath(): string

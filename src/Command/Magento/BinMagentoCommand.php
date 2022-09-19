@@ -46,11 +46,10 @@ EOF
     }
 
     /**
-     * Disable when no env or bin/magento not exists
      * @return bool
      */
     public function isEnabled()
     {
-        return is_array($this->config->getDotEnvConfig()) && $this->config->isMagento();
+        return $this->updater->getMagentoValidation()->isMagento();
     }
 }
