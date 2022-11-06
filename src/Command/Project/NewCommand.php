@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace Dcm\Cli\Command\Project;
 
+use Dcm\Cli\Config;
 use Dcm\Cli\Service\HttpRequest;
+use Dcm\Cli\Service\Images\RabbitMq;
 use Dcm\Cli\Service\Updater;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -22,6 +24,8 @@ use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Helper\Table;
 use Dcm\Cli\Command\AbstractCommandBase;
+use Dcm\Cli\Service\Images\PhpCli;
+use Dcm\Cli\Service\Images\PhpFpm;
 
 /**
  * Class NewCommand
@@ -30,9 +34,6 @@ class NewCommand extends AbstractCommandBase
 {
     protected static $defaultName = 'project:new';
     protected static $defaultDescription = 'Create a new docker local instance project';
-
-    const SELECT_VERSION_STRING = 'Specify a version';
-    const DO_NOT_USE_STRING = 'Do not use %s';
 
     /**
      * @var InputInterface
@@ -83,7 +84,7 @@ class NewCommand extends AbstractCommandBase
     {
         $this->setHelp(<<<EOF
 Use this command to create a new project. 
-The command will generate docker-compose.yml file and necessary configuration files: .env and global.env.
+The command will generate docker-compose.yml file and necessary configuration files.
 An interactive form will be presented with the available options.
 EOF
         );
@@ -102,17 +103,18 @@ EOF
 
         try {
             $projectDir = $this->getProjectDir();
-            $this->checkIsInProjectDir($projectDir);
-            $projectDomain = $this->getProjectDomain();
-            $projectCode = $this->getProjectCode($projectDomain);
-            $containers = $this->getContainerList();
+            $projectCode = $this->getProjectCode();
+            $projectDomain = $this->config->getLocalConfig(Config::LOCAL_ENV_DOMAIN_KEY);
 
-            $output->writeln('<info>Creating a project  "' . $projectCode . '" at "' . $projectDir . '"</info>');
+            $output->writeln('<info>Initializing a project  ' . $projectCode . '.'.$projectDomain.' in ' . $projectDir . '</info>');
+            $containers = $this->getContainerList();
+            $containers = $this->updateVersionsAndDomains($containers, $projectCode);
+
             $table = new Table($output);
             $rows = [];
-            foreach ($containers as $container) {
-                $host = ($container['hostname'] ? sprintf($container['hostname'], $projectDomain ): 'N/A');
-                $rows[]= [$container['name'], $container['version'], $host];
+            foreach ($containers['services'] as $service => $container) {
+                $host = (isset($container['hostname']) ? sprintf($container['hostname'], $projectDomain ) : 'N/A');
+                $rows[]= [$service, $container['image'], $host];
             }
             $table->setHeaders(['Service', 'Version', 'Host'])->setRows($rows);
             $table->render();
@@ -121,128 +123,38 @@ EOF
             if (!$confirm) {
                 return Command::SUCCESS;
             }
-            $this->downloadAndMergeFiles($containers);
-            $this->downloadGlobalEnv();
-            $this->saveEnvConfig($projectDomain, $projectCode);
+
             @mkdir($projectDir.DS.'src', 0777, true);
+            @mkdir($projectDir.DS.'dev', 0777, true);
+            $yaml = $this->config->getYaml()->dump($containers, 4,2);
+            file_put_contents($projectDir . DS . $this->config->getData('compose_file'), $yaml);
 
         } catch (\Exception $e) {
-            $output->writeln('<error>Failed to configure the project: '.$e->getMessage().'</error>');
+            $output->writeln('<error>Failed to create a project: '.$e->getMessage().'</error>');
             return Command::FAILURE;
         }
 
-        $output->writeln('<info>Created a project '.$projectCode. ' in '.$projectDir. '</info>');
+        $output->writeln('<info>The project '.$projectCode. ' has been created in '.$projectDir. '</info>');
 
         $hostsFile = '/etc/hosts';
         if ($this->config->isWindows()) {
             $hostsFile = 'C:\Windows\System32\Drivers\etc\hosts';
         }
-        $output->writeln('<info>Please, add the new domain to your hosts file: 127.0.0.1 '.$projectDomain. ' </info> (<comment>'.$hostsFile.'</comment>)');
+        $output->writeln('<info>Please, add the new domain to your hosts file: 127.0.0.1 ' . $projectCode . '.'.$projectDomain.' </info> (<comment>'.$hostsFile.'</comment>)');
         $output->writeln('<info>To run the environment use the command docker-compose up -d from the directory '.$projectDir);
 
         return Command::SUCCESS;
     }
 
-    /**
-     * @param array $containers
-     *
-     * @return void
-     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
-     */
-    private function downloadAndMergeFiles(array $containers): void
+    private function getContainerList(): array
     {
-        $projectDir = $this->getProjectDir();
-        $services = '';
-        foreach ($containers as $containerKey => $container) {
-            $url = sprintf($this->config->getData('local_part'), $containerKey);
-            $httpContent = $this->client->getHttpContent($url);
-            $service = sprintf($httpContent, $container['version']);
-            $services.=$service;
+        $question = new ConfirmationQuestion('Use Varnish cache? <info>(y/N)</info> ', false);
+        $confirm = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
+        $dockerCompose = $this->client->getHttpContent($this->config->getData('local_base'));
+        if ($confirm) {
+            $dockerCompose = $this->client->getHttpContent($this->config->getData('local_varnish_base'));
         }
-
-        $httpContent = $this->client->getHttpContent($this->config->getData('local_base'));
-        $dockerCompose = sprintf($httpContent, $services);
-        file_put_contents($projectDir.DS.$this->config->getData('compose_file'), $dockerCompose);
-    }
-
-    /**
-     * @return void
-     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
-     */
-    private function downloadGlobalEnv(): void
-    {
-        $projectDir = $this->getProjectDir();
-        $defaultConfig = $this->config->getData('env_default_config');
-        $timezone = $defaultConfig['timezone'];
-        $question = new Question('Please enter a timezone for containers [<comment>'.$timezone.'</comment>]: ', $timezone);
-        $timezone = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
-
-        $magentoRunMode = $defaultConfig['magento_run_mode'];
-        $question = new Question('Magento operation mode [<comment>'.$magentoRunMode.'</comment>]: ', $magentoRunMode);
-        $magentoRunMode = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
-
-        $phpMemoryLimit = $defaultConfig['php_memory_limit'];
-        $question = new Question('Please enter a timezone for containers [<comment>'.$phpMemoryLimit.'</comment>]: ', $phpMemoryLimit);
-        $phpMemoryLimit = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
-
-        $this->output->writeln('<comment><href=https://devdocs.magento.com/guides/v2.4/install-gde/prereq/connect-auth.html>Get your Magento authentication keys</></comment>');
-        $magentoComposerUsername = $defaultConfig['magento_composer_username'];
-        $question = new Question('Magento Access Public Key: ');
-        $magentoComposerUsername = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
-
-        $magentoComposerPassword = $defaultConfig['magento_composer_password'];
-        if ($magentoComposerUsername) {
-            $question = new Question('Magento Access Private Key: ');
-            $magentoComposerPassword = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
-        }
-
-        $httpContent = $this->client->getHttpContent($this->config->getData('global_env'));
-        $globalEnv = sprintf(
-            $httpContent,
-            $timezone,
-            $magentoRunMode,
-            $phpMemoryLimit,
-            $magentoComposerUsername,
-            $magentoComposerPassword
-        );
-
-        file_put_contents($projectDir.DS.$this->config->getData('global_env_file'), $globalEnv);
-    }
-
-    /**
-     * @param string $projectDomain
-     * @param string $projectCode
-     *
-     * @return void
-     */
-    private function saveEnvConfig(string $projectDomain, string $projectCode): void
-    {
-        $projectDir = $this->getProjectDir();
-        $env = <<<EOF
-COMPOSE_CONVERT_WINDOWS_PATHS=1
-WEBSITE_DOMAIN=$projectDomain
-PROJECT_NAME=$projectCode
-EOF;
-        file_put_contents($projectDir.DS.$this->config->getData('env_file'), $env);
-    }
-
-    /**
-     * @param string $projectDir
-     *
-     * @return void
-     * @throws \Exception
-     */
-    private function checkIsInProjectDir(string $projectDir): void
-    {
-        if (is_file($projectDir.DS.$this->config->getData('env_file'))) {
-            throw new \Exception('the selected directory has a project '.$projectDir );
-        }
+        return $this->config->getYaml()->parse($dockerCompose);
     }
 
     /**
@@ -253,133 +165,100 @@ EOF;
         return $this->getHelper('question');
     }
 
-    /**
-     * @return array
-     * @throws \Exception
-     */
-    private function getContainerList(): array
+    private function updateVersionsAndDomains(array $containers, string $projectCode): array
     {
-        $containerList = [];
-
-        $services = $this->config->getData('docker_env_services');
-
-        foreach ($services as $service => $serviceInfo) {
-            $versions = $this->getDockerContainerVersions($serviceInfo);
-            $defaultAnswer = (isset($versions[2]) ? $versions[2] : $versions[1]);
-
-            if ($service=='varnish') {
-                continue;
-                //todo Need to test docker-compose configurations
+        $domainContainerProperties = ['environment', 'labels'];
+        $mainDomain = $this->config->getLocalConfig(Config::LOCAL_ENV_DOMAIN_KEY);
+        $defaultProjectDomain = Config::DEFAULT_PROJECT_CODE.'.'.Config::DEFAULT_DOMAIN;
+        $projectDomain = $projectCode.'.'. $mainDomain;
+        foreach ($containers['services'] as $service => $serviceInfo) {
+            if (isset($serviceInfo['container_name'])) {
+                $containers['services'][$service]['container_name'] = str_replace(Config::DEFAULT_PROJECT_CODE, $projectCode, $serviceInfo['container_name']);
             }
-            $question = new ChoiceQuestion(
-                'Choose a version of the <info>'.$serviceInfo['name'].'</info>, please [<comment>'.$defaultAnswer.'</comment>]:',
-                $versions,
-                $defaultAnswer
-            );
-            $selectedVersion = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
-            if ($selectedVersion == static::SELECT_VERSION_STRING) {
-
-                $selectedVersion = $this->customVersion($serviceInfo);
+            if (isset($serviceInfo['hostname'])) {
+                $containers['services'][$service]['hostname'] = str_replace($defaultProjectDomain, $projectDomain, $serviceInfo['hostname']);
+            }
+            foreach ($serviceInfo as $containerProperty => $propertyValue) {
+                if (in_array($containerProperty, $domainContainerProperties) && is_array($propertyValue)) {
+                    foreach ($propertyValue as $valueKey => $valueString) {
+                        $containers['services'][$service][$containerProperty][$valueKey] = str_replace($defaultProjectDomain, $projectDomain, $serviceInfo[$containerProperty][$valueKey]);
+                        $containers['services'][$service][$containerProperty][$valueKey] = str_replace(Config::DEFAULT_PROJECT_CODE, $projectCode, $serviceInfo[$containerProperty][$valueKey]);
+                    }
+                }
             }
 
-            $containerList[$service] = array_merge(['version' => $selectedVersion], $serviceInfo);
+            $selectedVersion =  $this->selectVersion($service, $serviceInfo);
+            if (isset($serviceInfo['image'])) {
+                $containers['services'][$service]['image'] = strtok($serviceInfo['image'], ':').':'.$selectedVersion;
+            }
         }
-        return $containerList;
+
+        return $containers;
     }
 
-    /**
-     * @param array $serviceInfo
-     *
-     * @return string
-     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
-     */
-    private function customVersion(array $serviceInfo): string
+    private function selectVersion(string $service, array $serviceInfo): string
     {
-        $question = new Question(
-            'Specify a version of the <info>'.$serviceInfo['name'].'</info>, please: '
+        $versions = $this->getDockerContainerVersions($service, $serviceInfo);
+        $defaultAnswer = $versions[0];
+
+        $question = new ChoiceQuestion(
+            'Choose a version of the <info>'.$service.'</info>, please [<comment>'.$defaultAnswer.'</comment>]:',
+            $versions,
+            $defaultAnswer
         );
-        $question->setMaxAttempts(3);
-        $answer = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
-        if (!$answer) {
-            throw new \Exception('The version is empty for the service '.$serviceInfo['repo']);
-        }
 
-        $url = sprintf($this->config->getData('dockerhub_specific_tag_pattern'), $serviceInfo['repo'], $answer);
-        $httpContent = $this->client->getHttpContent($url);
-
-        return $answer;
+        return $this->getQuestionHelper()->ask($this->input, $this->output, $question);
     }
 
-    /**
-     * @param array $serviceInfo
-     * @param $pageSize
-     *
-     * @return array
-     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
-     */
-    private function getDockerContainerVersions(array $serviceInfo, $pageSize = 20): array
+    private function getDockerContainerVersions(string $serviceName, array $serviceInfo, $pageSize = 20): array
     {
-        $simplifiedVersions = [sprintf( static::DO_NOT_USE_STRING, $serviceInfo['name']), static::SELECT_VERSION_STRING];
-        $url = sprintf($this->config->getData('dockerhub_tag_pattern'), $serviceInfo['repo'], $pageSize);
+        $repo =  strtok($serviceInfo['image'], ':');
+        if ($serviceName == RabbitMq::SERVICE_NAME) {
+            $repo = 'library/'.$repo; // issue with RabbitMQ specifically
+        }
+        $imageVersions = [];
+        $url = sprintf($this->config->getData('dockerhub_tag_pattern'), $repo, $pageSize);
 
+        //@todo cache result for 24 hours.
         $httpContent = $this->client->getHttpContent($url);
         if (!$httpContent) {
-            $this->output->writeln('<warning>There is an issue to fetch tags for: '.$serviceInfo['repo'].'</warning>');
+            $this->output->writeln('<warning>There is an issue to fetch tags for: '.$repo.'</warning>');
         }
 
         $versions =  $this->serializer->decode($httpContent,JsonEncoder::FORMAT, [JsonDecode::ASSOCIATIVE =>true]);
 
         if (!isset($versions['results']) || !is_array($versions['results'])) {
-            $this->output->writeln('<warning>There is no tags found for: '.$serviceInfo['repo'].'</warning>');
-            return $simplifiedVersions;
+            $this->output->writeln('<warning>There is no tags found for: '.$repo.'</warning>');
+            return $imageVersions;
         }
 
         foreach ($versions['results'] as $version) {
-            if ($serviceInfo['version_pattern'] &&  preg_match($serviceInfo['version_pattern'], $version['name'])) {
-                $simplifiedVersions[] =  $version['name'];
-            } elseif (!$serviceInfo['version_pattern']) {
-                $simplifiedVersions[] =  $version['name'];
+            //skip arm builds
+            if (strpos($version['name'], 'arm64v8') === 0) {
+                continue;
             }
+            if ($serviceName == PhpCli::SERVICE_NAME && strpos($version['name'], PhpCli::SERVICE_NAME) === false) {
+              continue;
+            }
+            if ($serviceName == PhpFpm::SERVICE_NAME && strpos($version['name'], PhpFpm::SERVICE_NAME) === false) {
+                continue;
+            }
+            if ($serviceName == RabbitMq::SERVICE_NAME && preg_match('/[a-z\-]+$/', $version['name'])) {
+                continue;
+            }
+            $imageVersions[] =  $version['name'];
         }
-
-        return $simplifiedVersions;
+        arsort($imageVersions);
+        //reset array keys
+        $imageVersions = array_values($imageVersions);
+        return $imageVersions;
     }
 
-    /**
-     * @return string
-     */
-    private function getProjectDomain(): string
+    private function getProjectCode(): string
     {
-        $question = new Question('New project domain [<comment>Example: mag22.test</comment>]: ');
-        $question->setMaxAttempts(3);
-        $question->setNormalizer(function ($value) {
-            return $value ? trim($value) : $value;
-        });
-        $question->setValidator(function ($answer) {
-            if (!$answer || !preg_match('/^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/', $answer)) {
-                throw new \Exception('Invalid project domain');
-            }
-            return $answer;
-        });
+        $projectDomain = $this->config->getLocalConfig(Config::LOCAL_ENV_DOMAIN_KEY);
 
-        return $this->getQuestionHelper()->ask($this->input, $this->output, $question);
-    }
-
-    /**
-     * @param string $projectDomain
-     *
-     * @return string
-     */
-    private function getProjectCode(string $projectDomain): string
-    {
-        $projectDomain = preg_replace('/[^a-z0-9-]/', '', str_replace('.','-', $projectDomain));
-        $question = new Question('New project code [<comment>'.$projectDomain.'</comment>]: ', $projectDomain);
+        $question = new Question('Project code [<comment>The domain will be: {code}.'.$projectDomain.'</comment>]: ', $projectDomain);
         $question->setMaxAttempts(3);
         $question->setNormalizer(function ($value) {
             return $value ? trim($value) : $value;
@@ -411,6 +290,9 @@ EOF;
         $question->setValidator(function ($answer) {
             if (!is_dir($answer)) {
                 throw new \Exception('The directory does not exist or not writeable: '.$answer );
+            }
+            if (is_file($answer.DS.$this->config->getData('compose_file'))) {
+                throw new \Exception('The directory already has a project');
             }
 
             return $answer;

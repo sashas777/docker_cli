@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Dcm\Cli\Command\LocalServices;
 
+use Dcm\Cli\Config;
 use Dcm\Cli\Service\Updater;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
@@ -55,6 +56,9 @@ EOF
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $composeConfig = $this->config->getLocalServicesComposeFile();
+
+        $lsDir = $this->config->getLocalConfig(Config::LOCAL_SERVICE_CONFIG_KEY);
+        $output->writeln('Local Service Directory:<info>' . $lsDir . '</info>');
 
         foreach ($composeConfig['services'] as $serviceName => $serviceInfo) {
             $output->writeln('Service <info>' . $serviceName . '</info>');

@@ -27,10 +27,26 @@ class Config extends DataObject
      * Path to local configuration file
      */
     const LOCAL_SERVICE_CONFIG_KEY = 'local_services_path';
+
+    /**
+     * Main domain for all local environment subdomains
+     */
+    const LOCAL_ENV_DOMAIN_KEY = 'local_env_domain';
+
     /**
      * The name of database container
      */
     const DB_CONTAINER_NAME = 'db';
+
+    /*
+     * Default Domain in the GitHub docker-compose local services
+     */
+    const DEFAULT_DOMAIN = 'local.test';
+
+    /*
+     * Default project code in the GitHub docker-compose files
+     */
+    const DEFAULT_PROJECT_CODE = 'mag22';
 
     /**
      * @var JsonEncoder
@@ -147,6 +163,7 @@ class Config extends DataObject
     }
 
     /**
+     * @deprecated
      * @return array|null
      */
     public function getDotEnvConfig(): ?array
@@ -227,5 +244,13 @@ class Config extends DataObject
             return $this->yaml->parseFile($composeFile);
         }
         return null;
+    }
+
+    /**
+     * @return Yaml
+     */
+    public function getYaml(): Yaml
+    {
+        return $this->yaml;
     }
 }
