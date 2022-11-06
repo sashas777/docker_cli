@@ -163,18 +163,6 @@ class Config extends DataObject
     }
 
     /**
-     * @deprecated
-     * @return array|null
-     */
-    public function getDotEnvConfig(): ?array
-    {
-        if (is_readable($this->getData('env_file'))) {
-            return $this->dotenv->parse($this->getData('env_file'));
-        }
-        return null;
-    }
-
-    /**
      * @return array|null
      */
     public function getDockerComposeFile(): ?array

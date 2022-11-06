@@ -11,14 +11,13 @@ namespace Dcm\Cli\Command\Magento;
 
 use Dcm\Cli\Command\AbstractAliasCommand;
 use Dcm\Cli\Service\Updater;
+use Dcm\Cli\Service\Images\ElasticSearch;
 
 /**
  * Class ElasticSearchSetCommand
  */
 class ElasticSearchSetCommand extends AbstractAliasCommand
 {
-    const ELASTICSEARCH_SERVICE_NAME = 'elasticsearch';
-    const ELASTICSEARCH_SERVICE_PROPERTY_HOSTNAME = 'hostname';
     protected static $defaultName = 'magento:c:elastic';
 
     /**
@@ -40,10 +39,10 @@ class ElasticSearchSetCommand extends AbstractAliasCommand
         $composeConfig = $this->config->getDockerComposeFile();
 
         foreach ($composeConfig['services'] as $serviceName => $serviceInfo) {
-            if ($serviceName == static::ELASTICSEARCH_SERVICE_NAME) {
+            if ($serviceName == ElasticSearch::SERVICE_NAME) {
                 foreach ($serviceInfo as $property => $value) {
-                    if ($property== static::ELASTICSEARCH_SERVICE_PROPERTY_HOSTNAME) {
-                        $esHost = $this->parseEnvVar($value);
+                    if ($property == ElasticSearch::ELASTICSEARCH_SERVICE_PROPERTY_HOSTNAME) {
+                        $esHost = $value;
                     }
                 }
             }
@@ -53,20 +52,6 @@ class ElasticSearchSetCommand extends AbstractAliasCommand
         $commandInline = 'docker-compose exec -u www cli bin/magento config:set catalog/search/elasticsearch7_server_hostname '.$esHost;
         $command = explode(' ', $commandInline);
         $this->setCommand($command);
-    }
-
-    /**
-     * @param string $input
-     *
-     * @return string
-     */
-    private function parseEnvVar(string $input): string
-    {
-        $envConfig = $this->config->getDotEnvConfig();
-        foreach ($envConfig as $key=>$value) {
-            $input = str_replace('${'.$key.'}', $value, $input);
-        }
-        return $input;
     }
 
     /**

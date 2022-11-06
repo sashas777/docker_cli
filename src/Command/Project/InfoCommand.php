@@ -49,9 +49,9 @@ EOF
             $rows = [];
             foreach ($serviceInfo as $property => $value) {
                 if (is_array($value)) {
-                    $rows[] = [$property, $this->parseEnvVar(implode("\n", $value))];
+                    $rows[] = [$property,implode("\n", $value)];
                 } else {
-                    $rows[] = [$property, $this->parseEnvVar($value)];
+                    $rows[] = [$property, $value];
                 }
             }
 
@@ -62,20 +62,6 @@ EOF
         }
 
         return Command::SUCCESS;
-    }
-
-    /**
-     * @param string $input
-     *
-     * @return string
-     */
-    private function parseEnvVar(string $input): string
-    {
-        $envConfig = $this->config->getDotEnvConfig();
-        foreach ($envConfig as $key=>$value) {
-            $input = str_replace('${'.$key.'}', $value, $input);
-        }
-        return $input;
     }
 
     /**

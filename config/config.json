@@ -21,6 +21,5 @@
   "local_varnish_base": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Environment/docker-compose.varnish.yml",
   "local_services_base": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Services/docker-compose.yml",
   "mysql_config": "https://raw.githubusercontent.com/sashas777/magento-docker-pipelines/master/local/Local_Services/mysql/custom-config.cnf",
-  "compose_file": "docker-compose.yml",
-  "env_file": ".env"
+  "compose_file": "docker-compose.yml"
 }

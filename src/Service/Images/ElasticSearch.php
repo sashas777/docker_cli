@@ -12,4 +12,5 @@ namespace Dcm\Cli\Service\Images;
 class ElasticSearch
 {
     const SERVICE_NAME = 'elasticsearch';
+    const ELASTICSEARCH_SERVICE_PROPERTY_HOSTNAME = 'hostname';
 }

@@ -60,15 +60,20 @@ EOF
         $lsDir = $this->config->getLocalConfig(Config::LOCAL_SERVICE_CONFIG_KEY);
         $output->writeln('Local Service Directory:<info>' . $lsDir . '</info>');
 
+        $skipProperties = ['labels', 'restart', 'volumes', 'command'];
+
         foreach ($composeConfig['services'] as $serviceName => $serviceInfo) {
             $output->writeln('Service <info>' . $serviceName . '</info>');
 
             $rows = [];
             foreach ($serviceInfo as $property => $value) {
+                if (in_array($property, $skipProperties)) {
+                    continue;
+                }
                 if (is_array($value)) {
-                    $rows[] = [$property, $this->parseEnvVar(implode("\n", $value))];
+                    $rows[] = [$property, json_encode($value)];
                 } else {
-                    $rows[] = [$property, $this->parseEnvVar($value)];
+                    $rows[] = [$property, $value];
                 }
             }
 
@@ -79,25 +84,6 @@ EOF
         }
 
         return Command::SUCCESS;
-    }
-
-    /**
-     * @param string $input
-     *
-     * @return string
-     */
-    private function parseEnvVar(string $input): string
-    {
-        $envConfig = $this->config->getDotEnvConfig();
-
-        if ($envConfig === null) {
-            return $input;
-        }
-
-        foreach ($envConfig as $key=>$value) {
-            $input = str_replace('${'.$key.'}', $value, $input);
-        }
-        return $input;
     }
 
     /**
