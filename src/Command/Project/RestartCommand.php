@@ -48,6 +48,9 @@ EOF
      */
     public function isEnabled()
     {
+        if (!$this->updater->getDockerValidation()->isProjectCommandAllowed()) {
+            return false;
+        }
         return !$this->updater->getDockerValidation()->isProjectCanStart();
     }
 }
