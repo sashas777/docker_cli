@@ -79,7 +79,7 @@ class Docker
     /**
      * @return bool
      */
-    public function IsComposerFileExists(): bool
+    public function isComposerFileExists(): bool
     {
        return is_readable($this->config->getData('compose_file'));
     }
@@ -87,7 +87,31 @@ class Docker
     /**
      * @return bool
      */
-    public function IsLocalServicesSetup(): bool
+    public function isProjectCanStart(): bool
+    {
+        return $this->isProjectCommandAllowed() && !$this->isCliRunning();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isNewProjectCommandAllowed(): bool
+    {
+        return !$this->isComposerFileExists() && $this->isLocalServicesSetup();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isProjectCommandAllowed(): bool
+    {
+        return $this->isComposerFileExists() && $this->isLocalServicesSetup();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isLocalServicesSetup(): bool
     {
         return (bool) $this->config->getLocalServicesComposeFile();
     }

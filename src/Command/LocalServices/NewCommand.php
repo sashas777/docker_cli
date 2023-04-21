@@ -278,6 +278,6 @@ EOF
      */
     public function isEnabled()
     {
-        return !is_array($this->config->getLocalServicesComposeFile());
+        return !$this->updater->getDockerValidation()->isLocalServicesSetup();
     }
 }

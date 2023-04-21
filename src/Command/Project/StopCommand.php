@@ -51,6 +51,6 @@ EOF
      */
     public function isEnabled()
     {
-        return $this->updater->getDockerValidation()->isCliRunning();
+        return !$this->updater->getDockerValidation()->isProjectCanStart();
     }
 }
