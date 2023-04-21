@@ -178,11 +178,13 @@ EOF
             if (isset($serviceInfo['hostname'])) {
                 $containers['services'][$service]['hostname'] = str_replace($defaultProjectDomain, $projectDomain, $serviceInfo['hostname']);
             }
+
             foreach ($serviceInfo as $containerProperty => $propertyValue) {
                 if (in_array($containerProperty, $domainContainerProperties) && is_array($propertyValue)) {
                     foreach ($propertyValue as $valueKey => $valueString) {
                         $containers['services'][$service][$containerProperty][$valueKey] = str_replace($defaultProjectDomain, $projectDomain, $serviceInfo[$containerProperty][$valueKey]);
                         $containers['services'][$service][$containerProperty][$valueKey] = str_replace(Config::DEFAULT_PROJECT_CODE, $projectCode, $serviceInfo[$containerProperty][$valueKey]);
+                        $containers['services'][$service][$containerProperty][$valueKey] = str_replace(Config::DEFAULT_DOMAIN, $mainDomain, $serviceInfo[$containerProperty][$valueKey]);
                     }
                 }
             }
@@ -288,8 +290,8 @@ EOF
             return trim($value);
         });
         $question->setValidator(function ($answer) {
-            if (!is_dir($answer)) {
-                throw new \Exception('The directory does not exist or not writeable: '.$answer );
+            if (!is_dir($answer) && !mkdir($answer)) {
+                throw new \Exception('The directory or path is not writeable: '.$answer );
             }
             if (is_file($answer.DS.$this->config->getData('compose_file'))) {
                 throw new \Exception('The directory already has a project');
@@ -300,5 +302,13 @@ EOF
 
         $this->projectDir = $this->getQuestionHelper()->ask($this->input, $this->output, $question);
         return $this->projectDir;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isEnabled()
+    {
+        return !$this->updater->getDockerValidation()->IsComposerFileExists();
     }
 }

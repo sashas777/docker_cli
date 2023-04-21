@@ -18,7 +18,7 @@ use Dcm\Cli\Service\Updater;
 class UpdateCommand extends AbstractAliasCommand
 {
     protected static $defaultName = 'project:update';
-    protected static $defaultDescription = 'Update docker containers. Short version: <info>dcm p:u</info>. Restart container after this command.';
+    protected static $defaultDescription = 'Update docker containers. Short version: <info>dcm p:u</info>. Restart containers after this command: <info>dcm p:res</info>.';
 
     /**
      * @param Updater $updater

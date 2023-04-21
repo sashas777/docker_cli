@@ -79,7 +79,7 @@ class Docker
     /**
      * @return bool
      */
-    private function IsComposerFileExists(): bool
+    public function IsComposerFileExists(): bool
     {
        return is_readable($this->config->getData('compose_file'));
     }

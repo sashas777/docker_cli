@@ -65,7 +65,7 @@ EOF
     }
 
     /**
-     * Disable when no env file in th efolder
+     * Disable when no env file in the folder
      * @return bool
      */
     public function isEnabled()
