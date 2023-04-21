@@ -83,4 +83,12 @@ class Docker
     {
        return is_readable($this->config->getData('compose_file'));
     }
+
+    /**
+     * @return bool
+     */
+    public function IsLocalServicesSetup(): bool
+    {
+        return (bool) $this->config->getLocalServicesComposeFile();
+    }
 }

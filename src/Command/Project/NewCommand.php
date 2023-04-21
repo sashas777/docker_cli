@@ -309,6 +309,6 @@ EOF
      */
     public function isEnabled()
     {
-        return !$this->updater->getDockerValidation()->IsComposerFileExists();
+        return !$this->updater->getDockerValidation()->IsComposerFileExists() || !$this->updater->getDockerValidation()->IsLocalServicesSetup();
     }
 }
