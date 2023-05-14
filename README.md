@@ -31,6 +31,7 @@ After the installation, you can use the CLI by the command alias: `dcm`
   project:start        Start docker containers. Short version: dcm p:sta
   project:status       Lists status of containers.
   project:stop         Stop docker containers. Short version: dcm p:sto
+  project:tunnel       Tunnel into a container. Example for CLI container: dcm p:tun -c cli
   project:update       Update docker containers. Short version: dcm p:u. Restart container after this command.
  self
   self:build           Build a new package of the Docker Container Manager CLI

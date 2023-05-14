@@ -18,6 +18,8 @@ use Dcm\Cli\Config;
 class Docker
 {
     const CONTAINER_NAME_CLI = 'cli';
+    const CONTAINER_NAME_FPM = 'fpm';
+    const CONTAINER_NAME_ELASTICSEARCH = 'elasticsearch';
 
     /**
      * @var Config
