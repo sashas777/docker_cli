@@ -252,7 +252,7 @@ class Updater
     }
 
     /**
-     * Perform an rollback to previous installed version
+     * Perform a rollback to previous installed version
      *
      * @return bool
      */

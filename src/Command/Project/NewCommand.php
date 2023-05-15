@@ -26,13 +26,21 @@ use Symfony\Component\Console\Helper\Table;
 use Dcm\Cli\Command\AbstractCommandBase;
 use Dcm\Cli\Service\Images\PhpCli;
 use Dcm\Cli\Service\Images\PhpFpm;
+use Dcm\Cli\Service\LocalProjectRepository;
+use Dcm\Cli\Service\LocalProject\Project;
 
 /**
  * Class NewCommand
  */
 class NewCommand extends AbstractCommandBase
 {
+    /**
+     * @var string
+     */
     protected static $defaultName = 'project:new';
+    /**
+     * @var string
+     */
     protected static $defaultDescription = 'Create a new docker local instance project';
 
     /**
@@ -61,19 +69,27 @@ class NewCommand extends AbstractCommandBase
     private $client;
 
     /**
+     * @var LocalProjectRepository
+     */
+    private $localProjectRepository;
+
+    /**
      * @param Updater $updater
      * @param JsonEncoder $serializer
      * @param HttpRequest $client
+     * @param LocalProjectRepository $localProjectRepository
      * @param string|null $name
      */
     public function __construct(
         Updater $updater,
         JsonEncoder $serializer,
         HttpRequest $client,
+        LocalProjectRepository $localProjectRepository,
         string $name = null
     ) {
         $this->serializer = $serializer;
         $this->client = $client;
+        $this->localProjectRepository = $localProjectRepository;
         parent::__construct($updater, $name);
     }
 
@@ -129,6 +145,14 @@ EOF
             $yaml = $this->config->getYaml()->dump($containers, 4,2);
             file_put_contents($projectDir . DS . $this->config->getData('compose_file'), $yaml);
 
+            //save/rewrite project info
+            //@todo check if project with the same code exists
+            $project = new Project();
+            $project->setProjectCode($projectCode)
+                    ->setProjectDirectory($projectDir)
+                    ->setProjectDomain($projectCode. '.'.$projectDomain);
+            $localProject = $this->localProjectRepository->saveProject($project);
+
         } catch (\Exception $e) {
             $output->writeln('<error>Failed to create a project: '.$e->getMessage().'</error>');
             return Command::FAILURE;
@@ -146,6 +170,13 @@ EOF
         return Command::SUCCESS;
     }
 
+    /**
+     * @return array
+     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     */
     private function getContainerList(): array
     {
         $question = new ConfirmationQuestion('Use Varnish cache? <info>(y/N)</info> ', false);
@@ -165,6 +196,12 @@ EOF
         return $this->getHelper('question');
     }
 
+    /**
+     * @param array $containers
+     * @param string $projectCode
+     *
+     * @return array
+     */
     private function updateVersionsAndDomains(array $containers, string $projectCode): array
     {
         $domainContainerProperties = ['environment', 'labels'];
@@ -198,13 +235,19 @@ EOF
         return $containers;
     }
 
+    /**
+     * @param string $service
+     * @param array $serviceInfo
+     *
+     * @return string
+     */
     private function selectVersion(string $service, array $serviceInfo): string
     {
         $versions = $this->getDockerContainerVersions($service, $serviceInfo);
         $defaultAnswer = $versions[0];
 
         $question = new ChoiceQuestion(
-            'Choose a version of the <info>'.$service.'</info>, please [<comment>'.$defaultAnswer.'</comment>]:',
+            'Choose a version of the <info>'.$service.'</info>. Default option: [<comment>'.$defaultAnswer.'</comment>]:',
             $versions,
             $defaultAnswer
         );
@@ -212,12 +255,25 @@ EOF
         return $this->getQuestionHelper()->ask($this->input, $this->output, $question);
     }
 
+    /**
+     * @param string $serviceName
+     * @param array $serviceInfo
+     * @param $pageSize
+     *
+     * @return array
+     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     */
     private function getDockerContainerVersions(string $serviceName, array $serviceInfo, $pageSize = 20): array
     {
         $repo =  strtok($serviceInfo['image'], ':');
+
         if ($serviceName == RabbitMq::SERVICE_NAME) {
             $repo = 'library/'.$repo; // issue with RabbitMQ specifically
         }
+
         $imageVersions = [];
         $url = sprintf($this->config->getData('dockerhub_tag_pattern'), $repo, $pageSize);
 
@@ -234,7 +290,14 @@ EOF
             return $imageVersions;
         }
 
+        //@todo RabbitMQ versions changed
+        if ($serviceName == RabbitMq::SERVICE_NAME) {
+            $imageVersions[] =  '3.8-management';
+            return $imageVersions;
+        }
+
         foreach ($versions['results'] as $version) {
+
             //skip arm builds
             if (strpos($version['name'], 'arm64v8') === 0) {
                 continue;
@@ -245,6 +308,7 @@ EOF
             if ($serviceName == PhpFpm::SERVICE_NAME && strpos($version['name'], PhpFpm::SERVICE_NAME) === false) {
                 continue;
             }
+            //@todo RabbitMQ versions changed
             if ($serviceName == RabbitMq::SERVICE_NAME && preg_match('/[a-z\-]+$/', $version['name'])) {
                 continue;
             }
@@ -256,6 +320,9 @@ EOF
         return $imageVersions;
     }
 
+    /**
+     * @return string
+     */
     private function getProjectCode(): string
     {
         $projectDomain = $this->config->getLocalConfig(Config::LOCAL_ENV_DOMAIN_KEY);

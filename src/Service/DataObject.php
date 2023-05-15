@@ -9,6 +9,10 @@ declare(strict_types=1);
 
 namespace Dcm\Cli\Service;
 
+/**
+ * Class DataObject
+ */
+#[\AllowDynamicProperties] //@phpstan-ignore-line
 class DataObject implements \ArrayAccess
 {
     /**
@@ -28,13 +32,14 @@ class DataObject implements \ArrayAccess
     /**
      * Constructor
      *
-     * By default is looking for first argument as array and assigns it as object attributes
+     * By the default is looking for first argument as array and assigns it as object attributes
      * This behavior may change in child classes
      *
      * @param array $data
      */
-    public function __construct(array $data = [])
-    {
+    public function __construct(
+        array $data = []
+    ) {
         $this->_data = $data;
     }
 
@@ -510,5 +515,22 @@ class DataObject implements \ArrayAccess
             return $this->_data[$offset];
         }
         return null;
+    }
+
+    /**
+     * Convert object data to JSON
+     *
+     * @param array $keys array of required keys
+     * @return bool|string
+     * @throws \InvalidArgumentException
+     */
+    public function toJson(array $keys = [])
+    {
+        $data = $this->toArray($keys);
+        $result = json_encode($data);
+        if (false === $result) {
+            throw new \InvalidArgumentException("Unable to serialize value. Error: " . json_last_error_msg());
+        }
+        return $result;
     }
 }
