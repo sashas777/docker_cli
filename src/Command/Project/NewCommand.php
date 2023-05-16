@@ -219,9 +219,9 @@ EOF
             foreach ($serviceInfo as $containerProperty => $propertyValue) {
                 if (in_array($containerProperty, $domainContainerProperties) && is_array($propertyValue)) {
                     foreach ($propertyValue as $valueKey => $valueString) {
-                        $containers['services'][$service][$containerProperty][$valueKey] = str_replace($defaultProjectDomain, $projectDomain, $serviceInfo[$containerProperty][$valueKey]);
-                        $containers['services'][$service][$containerProperty][$valueKey] = str_replace(Config::DEFAULT_PROJECT_CODE, $projectCode, $serviceInfo[$containerProperty][$valueKey]);
-                        $containers['services'][$service][$containerProperty][$valueKey] = str_replace(Config::DEFAULT_DOMAIN, $mainDomain, $serviceInfo[$containerProperty][$valueKey]);
+                        $containers['services'][$service][$containerProperty][$valueKey] = str_replace($defaultProjectDomain, $projectDomain, $containers['services'][$service][$containerProperty][$valueKey]);
+                        $containers['services'][$service][$containerProperty][$valueKey] = str_replace(Config::DEFAULT_PROJECT_CODE, $projectCode, $containers['services'][$service][$containerProperty][$valueKey]);
+                        $containers['services'][$service][$containerProperty][$valueKey] = str_replace(Config::DEFAULT_DOMAIN, $mainDomain, $containers['services'][$service][$containerProperty][$valueKey] );
                     }
                 }
             }
