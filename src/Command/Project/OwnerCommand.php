@@ -40,13 +40,12 @@ class OwnerCommand extends AbstractAliasCommand
     protected function configure()
     {
         $this->setHelp(<<<EOF
-Use this command to reseat file ownership to www user.
+Use this command to reseat file ownership to the www user.
 EOF
         );
     }
 
     /**
-     * Disable when no env file in th efolder
      * @return bool
      */
     public function isEnabled()

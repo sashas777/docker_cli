@@ -24,9 +24,12 @@ After the installation, you can use the CLI by the command alias: `dcm`
  project
   project:chown        Reset project file ownership to www user.
   project:exec         Execute a command inside CLI container. Short version: dcm p:e
+  project:import       Import an existing project in local registry
   project:info         Project information for each service
+  project:list         List all projects
   project:new          Create a new docker local instance project
   project:php:modules  List php modules for the CLI container.
+  project:remove       Remove a project from local registry
   project:restart      Restart docker containers. Short version: dcm p:r
   project:start        Start docker containers. Short version: dcm p:sta
   project:status       Lists status of containers.

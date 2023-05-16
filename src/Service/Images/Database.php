@@ -9,8 +9,13 @@ declare(strict_types=1);
 
 namespace Dcm\Cli\Service\Images;
 
-class PhpFpm
+/**
+ * Class Database
+ */
+class Database
 {
-    const SERVICE_NAME = 'fpm';
-    const CONTAINER_NAME_SUFFIX = '-fpm';
+    /**
+     *
+     */
+    const SERVICE_NAME = 'db';
 }

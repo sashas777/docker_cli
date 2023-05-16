@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Dcm\Cli\Command\Project;
 
+use Dcm\Cli\Service\Images\PhpCli;
 use Dcm\Cli\Service\Updater;
 use Dcm\Cli\Service\Validation\Docker;
 use Symfony\Component\Console\Command\Command;
@@ -120,7 +121,7 @@ class TunnelCommand extends AbstractCommandBase
         $user = '';
 
         //@todo change after project info stored
-        if (strpos($selectedContainerName, Docker::CONTAINER_NAME_CLI) !== false) {
+        if (strpos($selectedContainerName, PhpCli::SERVICE_NAME) !== false) {
             // when cli params used
             if ($userInputContainer && !$userValue)  {
                 $user = ' -u www';
@@ -175,7 +176,6 @@ EOF
     }
 
     /**
-     * Disable when no env file in the folder
      * @return bool
      */
     public function isEnabled()

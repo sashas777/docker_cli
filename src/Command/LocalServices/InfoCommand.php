@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Dcm\Cli\Command\LocalServices;
 
 use Dcm\Cli\Config;
+use Dcm\Cli\Service\Images\Database;
 use Dcm\Cli\Service\Updater;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
@@ -75,6 +76,9 @@ EOF
                 } else {
                     $rows[] = [$property, $value];
                 }
+            }
+            if ($serviceName == Database::SERVICE_NAME) {
+                $rows[] = ['Status', $this->updater->getDockerValidation()->isDatabaseRunning() ? '<info>Running</info>' : '<error>Stopped</error>'];
             }
 
             $table = new Table($output);

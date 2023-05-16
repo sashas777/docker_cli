@@ -9,21 +9,26 @@ declare(strict_types=1);
 
 namespace Dcm\Cli\Service\Validation;
 
+use Dcm\Cli\Service\Images\Database;
+use Dcm\Cli\Service\LocalProjectRepository;
 use Symfony\Component\Process\Process;
 use Dcm\Cli\Config;
+use Dcm\Cli\Service\Images\PhpCli;
 
 /**
  * Class Docker
  */
 class Docker
 {
-    /** @deprecated  \Dcm\Cli\Service\Images\PhpCli::SERVICE_NAME */
-    const CONTAINER_NAME_CLI = 'cli';
-
     /**
      * @var Config
      */
     private $config;
+
+    /**
+     * @var LocalProjectRepository
+     */
+    private $localProjectRepository;
 
     /**
      * @var null
@@ -31,12 +36,20 @@ class Docker
     private $cliStatus = null;
 
     /**
+     * @var null
+     */
+    private $dbStatus = null;
+
+    /**
      * @param Config $config
+     * @param LocalProjectRepository $localProjectRepository
      */
     public function __construct(
-        Config $config
+        Config $config,
+        LocalProjectRepository $localProjectRepository
     ) {
         $this->config = $config;
+        $this->localProjectRepository = $localProjectRepository;
     }
 
     /**
@@ -51,7 +64,7 @@ class Docker
             return $this->cliStatus;
         }
 
-        $getProcessIdCommand = 'docker-compose ps -q '.static::CONTAINER_NAME_CLI;
+        $getProcessIdCommand = 'docker-compose ps -q '.PhpCli::SERVICE_NAME;
 
         try {
             $process = Process::fromShellCommandline($getProcessIdCommand);
@@ -77,6 +90,29 @@ class Docker
         return $this->cliStatus;
     }
 
+    public function isDatabaseRunning(): bool
+    {
+        if ($this->dbStatus !== null) {
+            return $this->dbStatus;
+        }
+
+        try {
+            $getProcessIdRunningCommand = 'docker ps -q --no-trunc -f name='.Database::SERVICE_NAME;
+            $process = Process::fromShellCommandline($getProcessIdRunningCommand);
+            $process->mustRun();
+            $runningProcessId = $process->getOutput();
+            if (!$runningProcessId) {
+                $this->dbStatus = false;
+                return $this->dbStatus;
+            }
+        } catch (\Exception $e) {
+            $this->dbStatus = false;
+            return $this->dbStatus;
+        }
+        $this->dbStatus = true;
+        return $this->dbStatus;
+    }
+
     /**
      * @return bool
      */
@@ -98,7 +134,9 @@ class Docker
      */
     public function isNewProjectCommandAllowed(): bool
     {
-        return !$this->isComposerFileExists() && $this->isLocalServicesSetup();
+        return !$this->localProjectRepository->getCurrentProject()
+               && !$this->isComposerFileExists()
+               && $this->isLocalServicesSetup();
     }
 
     /**
@@ -106,7 +144,19 @@ class Docker
      */
     public function isProjectCommandAllowed(): bool
     {
-        return $this->isComposerFileExists() && $this->isLocalServicesSetup();
+        return $this->localProjectRepository->getCurrentProject()
+               && $this->isComposerFileExists()
+               && $this->isLocalServicesSetup();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isProjectImportCommandAllowed(): bool
+    {
+        return !$this->localProjectRepository->getCurrentProject()
+               && $this->isComposerFileExists()
+               && $this->isLocalServicesSetup();
     }
 
     /**

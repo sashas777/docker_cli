@@ -70,6 +70,34 @@ class LocalProjectRepository
     }
 
     /**
+     * @return array []Project
+     */
+    public function getAllProjects(): array
+    {
+        $allProjects = [];
+        $projects = $this->getProjects();
+        foreach ($projects as $project) {
+            $projectData = json_decode($project, true);
+
+            $projectModel = new Project();
+            $this->dataObjectHelper->populateWithArray($projectModel, $projectData, ProjectInterface::class);
+            $allProjects[$projectModel->getProjectCode()] = $projectModel;
+        }
+        return $allProjects;
+    }
+
+    /**
+     * @param string $projectCode
+     *
+     * @return array
+     */
+    public function removeProjectByCode(string $projectCode): array
+    {
+        $project = $this->getProject($projectCode);
+        return $this->removeProject($project);
+    }
+
+    /**
      * @param ProjectInterface $project
      *
      * @return ProjectInterface
@@ -103,6 +131,17 @@ class LocalProjectRepository
     private function addProject(ProjectInterface $project): array
     {
         $this->projects[$project->getProjectCode()] = $project->toJson();
+        return $this->saveProjects();
+    }
+
+    /**
+     * @param ProjectInterface $project
+     *
+     * @return array
+     */
+    private function removeProject(ProjectInterface $project): array
+    {
+        unset($this->projects[$project->getProjectCode()]);
         return $this->saveProjects();
     }
 
