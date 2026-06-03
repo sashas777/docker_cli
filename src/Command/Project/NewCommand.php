@@ -1,7 +1,7 @@
 <?php
 /*
  * @author     The S Group <support@sashas.org>
- * @copyright  2022  Sashas IT Support Inc. (https://www.sashas.org)
+ * @copyright  2026  Edeavour Inc. (https://www.sashas.org)
  * @license     http://opensource.org/licenses/GPL-3.0  GNU General Public License, version 3 (GPL-3.0)
  */
 
@@ -185,7 +185,102 @@ EOF
         if ($confirm) {
             $dockerCompose = $this->client->getHttpContent($this->config->getData('local_varnish_base'));
         }
-        return $this->config->getYaml()->parse($dockerCompose);
+        $containers = $this->config->getYaml()->parse($dockerCompose);
+
+        // Search service selection (Elasticsearch, OpenSearch, None)
+        $searchQuestion = new ChoiceQuestion(
+            'Which search service do you want to use? Default is [<comment>elasticsearch</comment>]:',
+            ['elasticsearch', 'opensearch', 'none'],
+            'elasticsearch'
+        );
+        $searchChoice = $this->getQuestionHelper()->ask($this->input, $this->output, $searchQuestion);
+
+        if ($searchChoice === 'opensearch') {
+            if (isset($containers['services']['elasticsearch'])) {
+                $opensearchService = $containers['services']['elasticsearch'];
+                $opensearchService['container_name'] = str_replace('elasticsearch', 'opensearch', $opensearchService['container_name']);
+                $opensearchService['hostname'] = str_replace('elasticsearch', 'opensearch', $opensearchService['hostname']);
+                if (isset($opensearchService['image'])) {
+                    $opensearchService['image'] = 'sashas777/magento-opensearch:3.0';
+                }
+                unset($containers['services']['elasticsearch']);
+                $containers['services']['opensearch'] = $opensearchService;
+            }
+        } elseif ($searchChoice === 'none') {
+            unset($containers['services']['elasticsearch']);
+        }
+
+        // Caching service selection (Redis, Valkey, Both, None)
+        $cacheQuestion = new ChoiceQuestion(
+            'Which caching service(s) do you want to use? Default is [<comment>redis</comment>]:',
+            ['redis', 'valkey', 'both', 'none'],
+            'redis'
+        );
+        $cacheChoice = $this->getQuestionHelper()->ask($this->input, $this->output, $cacheQuestion);
+
+        if ($cacheChoice === 'valkey') {
+            if (isset($containers['services']['redis'])) {
+                $valkeyService = $containers['services']['redis'];
+                $valkeyService['container_name'] = str_replace('redis', 'valkey', $valkeyService['container_name']);
+                $valkeyService['hostname'] = str_replace('redis', 'valkey', $valkeyService['hostname']);
+                if (isset($valkeyService['image'])) {
+                    $valkeyService['image'] = 'sashas777/magento-valkey:9.0';
+                }
+                if (isset($valkeyService['volumes'])) {
+                    foreach ($valkeyService['volumes'] as $idx => $vol) {
+                        $valkeyService['volumes'][$idx] = str_replace('redis', 'valkey', $vol);
+                    }
+                }
+                unset($containers['services']['redis']);
+                $containers['services']['valkey'] = $valkeyService;
+            }
+        } elseif ($cacheChoice === 'both') {
+            if (isset($containers['services']['redis'])) {
+                $valkeyService = $containers['services']['redis'];
+                $valkeyService['container_name'] = str_replace('redis', 'valkey', $valkeyService['container_name']);
+                $valkeyService['hostname'] = str_replace('redis', 'valkey', $valkeyService['hostname']);
+                if (isset($valkeyService['image'])) {
+                    $valkeyService['image'] = 'sashas777/magento-valkey:9.0';
+                }
+                if (isset($valkeyService['volumes'])) {
+                    foreach ($valkeyService['volumes'] as $idx => $vol) {
+                        $valkeyService['volumes'][$idx] = str_replace('redis', 'valkey', $vol);
+                    }
+                }
+                $containers['services']['valkey'] = $valkeyService;
+            }
+        } elseif ($cacheChoice === 'none') {
+            unset($containers['services']['redis']);
+        }
+
+        // Update depends_on for search and caching changes
+        foreach ($containers['services'] as $serviceName => $serviceInfo) {
+            if (isset($serviceInfo['depends_on']) && is_array($serviceInfo['depends_on'])) {
+                foreach ($serviceInfo['depends_on'] as $idx => $dep) {
+                    if ($dep === 'elasticsearch') {
+                        if ($searchChoice === 'opensearch') {
+                            $containers['services'][$serviceName]['depends_on'][$idx] = 'opensearch';
+                        } elseif ($searchChoice === 'none') {
+                            unset($containers['services'][$serviceName]['depends_on'][$idx]);
+                        }
+                    } elseif ($dep === 'redis') {
+                        if ($cacheChoice === 'valkey') {
+                            $containers['services'][$serviceName]['depends_on'][$idx] = 'valkey';
+                        } elseif ($cacheChoice === 'none') {
+                            unset($containers['services'][$serviceName]['depends_on'][$idx]);
+                        }
+                    }
+                }
+                if (isset($containers['services'][$serviceName]['depends_on'])) {
+                    $containers['services'][$serviceName]['depends_on'] = array_values(array_filter($containers['services'][$serviceName]['depends_on']));
+                    if (empty($containers['services'][$serviceName]['depends_on'])) {
+                        unset($containers['services'][$serviceName]['depends_on']);
+                    }
+                }
+            }
+        }
+
+        return $containers;
     }
 
     /**
@@ -228,7 +323,11 @@ EOF
 
             $selectedVersion =  $this->selectVersion($service, $serviceInfo);
             if (isset($serviceInfo['image'])) {
-                $containers['services'][$service]['image'] = strtok($serviceInfo['image'], ':').':'.$selectedVersion;
+                $repo = strtok($serviceInfo['image'], ':');
+                if ($service === RabbitMq::SERVICE_NAME) {
+                    $repo = 'sashas777/magento-rabbitmq';
+                }
+                $containers['services'][$service]['image'] = $repo.':'.$selectedVersion;
             }
         }
 
@@ -266,12 +365,14 @@ EOF
      * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
-    private function getDockerContainerVersions(string $serviceName, array $serviceInfo, $pageSize = 20): array
+    private function getDockerContainerVersions(string $serviceName, array $serviceInfo, $pageSize = 100): array
     {
         $repo =  strtok($serviceInfo['image'], ':');
 
-        if ($serviceName == RabbitMq::SERVICE_NAME && strpos($repo, '/') === false) {
-            $repo = 'library/'.$repo; // issue with RabbitMQ specifically
+        if ($serviceName == RabbitMq::SERVICE_NAME) {
+            $repo = 'sashas777/magento-rabbitmq';
+        } elseif (strpos($repo, '/') === false) {
+            $repo = 'library/'.$repo;
         }
 
         $imageVersions = [];
