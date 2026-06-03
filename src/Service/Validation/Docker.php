@@ -64,7 +64,7 @@ class Docker
             return $this->cliStatus;
         }
 
-        $getProcessIdCommand = 'docker-compose ps -q '.PhpCli::SERVICE_NAME;
+        $getProcessIdCommand = $this->config->getDockerComposeCmdString() . ' ps -q ' . PhpCli::SERVICE_NAME;
 
         try {
             $process = Process::fromShellCommandline($getProcessIdCommand);

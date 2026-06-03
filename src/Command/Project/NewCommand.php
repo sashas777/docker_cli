@@ -165,7 +165,7 @@ EOF
             $hostsFile = 'C:\Windows\System32\Drivers\etc\hosts';
         }
         $output->writeln('<info>Please, add the new domain to your hosts file: 127.0.0.1 ' . $projectCode . '.'.$projectDomain.' </info> (<comment>'.$hostsFile.'</comment>)');
-        $output->writeln('<info>To run the environment use the command docker-compose up -d from the directory '.$projectDir);
+        $output->writeln('<info>To run the environment use the command docker compose up -d from the directory '.$projectDir);
 
         return Command::SUCCESS;
     }
@@ -270,7 +270,7 @@ EOF
     {
         $repo =  strtok($serviceInfo['image'], ':');
 
-        if ($serviceName == RabbitMq::SERVICE_NAME) {
+        if ($serviceName == RabbitMq::SERVICE_NAME && strpos($repo, '/') === false) {
             $repo = 'library/'.$repo; // issue with RabbitMQ specifically
         }
 
@@ -291,7 +291,7 @@ EOF
         }
 
         //@todo RabbitMQ versions changed
-        if ($serviceName == RabbitMq::SERVICE_NAME) {
+        if ($serviceName == RabbitMq::SERVICE_NAME && strpos($repo, 'sashas777/') === false) {
             $imageVersions[] =  '3.8-management';
             return $imageVersions;
         }

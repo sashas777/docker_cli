@@ -68,6 +68,12 @@ abstract class AbstractAliasCommand extends AbstractCommandBase
 
         $command = array_merge($this->getCommand(), $argv);
 
+        if (isset($command[0]) && $command[0] === 'docker-compose') {
+            $dockerComposeCmd = $this->config->getDockerComposeCmd();
+            array_shift($command);
+            $command = array_merge($dockerComposeCmd, $command);
+        }
+
         try {
             $output->writeln('<info>Executing command:</info> '.implode(' ', $command));
             $startTime = microtime(true);

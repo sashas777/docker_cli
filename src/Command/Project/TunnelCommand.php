@@ -82,9 +82,11 @@ class TunnelCommand extends AbstractCommandBase
         $selectedContainer = false;
         $selectedContainerName = $userInputContainer;
 
+        $dockerComposeCmdString = $this->config->getDockerComposeCmdString();
+
         if($userInputContainer) {
             try {
-                $process = Process::fromShellCommandline(static::COMMAND_GET_ID_BY_CONTAINER_NAME.' '.$userInputContainer);
+                $process = Process::fromShellCommandline($dockerComposeCmdString . ' ps -q ' . $userInputContainer);
                 $process->mustRun();
                 $selectedContainer = trim($process->getOutput());
             } catch (\Exception $exception) {
@@ -93,7 +95,7 @@ class TunnelCommand extends AbstractCommandBase
         }
 
         if (!$selectedContainer) {
-            $process = Process::fromShellCommandline(static::COMMAND_RUNNING_CONTAINERS_JSON);
+            $process = Process::fromShellCommandline($dockerComposeCmdString . ' ps --filter status=running --format json');
             $process->mustRun();
             $runningContainers = json_decode($process->getOutput(), true);
 

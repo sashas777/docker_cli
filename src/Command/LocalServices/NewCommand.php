@@ -124,7 +124,7 @@ EOF
         $output->writeln('<info>Created Local Services docker-compose files in ' . $lsDir . '</info>');
         $output->writeln('<info>Database: </info><comment>root:pass@127.0.0.1:3306</comment>');
         $output->writeln('<info>Portainer password: </info><comment>admin</comment>');
-        $output->writeln('To run the local services use the command docker-compose up -d from the directory <info>' . $lsDir . '</info>');
+        $output->writeln('To run the local services use the command docker compose up -d from the directory <info>' . $lsDir . '</info>');
 
         return Command::SUCCESS;
     }

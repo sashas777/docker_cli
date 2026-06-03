@@ -241,4 +241,45 @@ class Config extends DataObject
     {
         return $this->yaml;
     }
+
+    /**
+     * @var array|null
+     */
+    private $dockerComposeCmd = null;
+
+    /**
+     * Get docker compose command (array) based on host capability (v2 plugin vs v1 binary).
+     *
+     * @return array
+     */
+    public function getDockerComposeCmd(): array
+    {
+        if ($this->dockerComposeCmd !== null) {
+            return $this->dockerComposeCmd;
+        }
+
+        // Run `docker compose version` to check if v2 plugin is available
+        try {
+            $process = \Symfony\Component\Process\Process::fromShellCommandline('docker compose version');
+            if ($process->run() === 0) {
+                $this->dockerComposeCmd = ['docker', 'compose'];
+                return $this->dockerComposeCmd;
+            }
+        } catch (\Exception $e) {
+            // Ignore and fall back to docker-compose
+        }
+
+        $this->dockerComposeCmd = ['docker-compose'];
+        return $this->dockerComposeCmd;
+    }
+
+    /**
+     * Get docker compose command string.
+     *
+     * @return string
+     */
+    public function getDockerComposeCmdString(): string
+    {
+        return implode(' ', $this->getDockerComposeCmd());
+    }
 }

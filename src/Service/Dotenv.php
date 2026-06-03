@@ -9,6 +9,9 @@ declare(strict_types=1);
 
 namespace Dcm\Cli\Service;
 
+use Exception;
+
+
 /**
  * Class Dotenv
  */

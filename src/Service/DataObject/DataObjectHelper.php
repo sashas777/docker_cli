@@ -54,12 +54,63 @@ class DataObjectHelper
                     $dataObject->$methodName($value);
                 } else {
                     $getterMethodName = 'get' . $camelCaseKey;
-                    die('setComplexValue');
-                    //$this->setComplexValue($dataObject, $getterMethodName, $methodName, $value, $interfaceName);
+                    $this->setComplexValue($dataObject, $getterMethodName, $methodName, $value, $interfaceName);
                 }
             }
         }
 
         return $this;
+    }
+
+    /**
+     * Set complex nested objects or fallback to array value.
+     *
+     * @param mixed $dataObject
+     * @param string $getterMethodName
+     * @param string $methodName
+     * @param array $value
+     * @param string $interfaceName
+     * @return void
+     */
+    protected function setComplexValue($dataObject, string $getterMethodName, string $methodName, array $value, string $interfaceName)
+    {
+        if (method_exists($dataObject, $getterMethodName)) {
+            $existingValue = $dataObject->$getterMethodName();
+            if (is_object($existingValue)) {
+                $this->setDataValues($existingValue, $value, get_class($existingValue));
+                $dataObject->$methodName($existingValue);
+                return;
+            }
+        }
+
+        try {
+            $reflection = new \ReflectionMethod($dataObject, $methodName);
+            $parameters = $reflection->getParameters();
+            if (count($parameters) > 0) {
+                $firstParam = $parameters[0];
+                $type = $firstParam->getType();
+                if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
+                    $className = $type->getName();
+
+                    if (interface_exists($className)) {
+                        $concreteClassName = preg_replace('/Interface$/', '', $className);
+                        if (class_exists($concreteClassName)) {
+                            $className = $concreteClassName;
+                        }
+                    }
+
+                    if (class_exists($className)) {
+                        $nestedObject = new $className();
+                        $this->setDataValues($nestedObject, $value, $className);
+                        $dataObject->$methodName($nestedObject);
+                        return;
+                    }
+                }
+            }
+        } catch (\ReflectionException $e) {
+            // Ignore reflection errors and fall back to setting value directly
+        }
+
+        $dataObject->$methodName($value);
     }
 }
