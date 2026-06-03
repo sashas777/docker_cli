@@ -18,6 +18,8 @@ use Dcm\Cli\Service\LocalProjectRepository;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Input\InputDefinition;
 
 /**
  * Class App
@@ -89,5 +91,31 @@ class App extends Application
     protected function getDefaultCommands()
     {
         return [new ListCommand(), new HelpCommand(), new CompletionCommand()];
+    }
+
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     *
+     * @return int
+     */
+    public function doRun(InputInterface $input, OutputInterface $output)
+    {
+        if (true === $input->hasParameterOption('--selfupdate') || true === $input->hasParameterOption('--self-update')) {
+            $input = new \Symfony\Component\Console\Input\ArrayInput(['command' => 'self:update']);
+        }
+
+        return parent::doRun($input, $output);
+    }
+
+    /**
+     * @return InputDefinition
+     */
+    protected function getDefaultInputDefinition(): InputDefinition
+    {
+        $definition = parent::getDefaultInputDefinition();
+        $definition->addOption(new InputOption('--selfupdate', null, InputOption::VALUE_NONE, 'Updates Dcm to the latest version'));
+        $definition->addOption(new InputOption('--self-update', null, InputOption::VALUE_NONE, 'Updates Dcm to the latest version'));
+        return $definition;
     }
 }
